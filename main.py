@@ -7,7 +7,8 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QVBoxLayout,
     QWidget,
-    QPushButton
+    QPushButton,
+    QStackedWidget
 )
 from PyQt6.QtGui import QFont
 
@@ -19,11 +20,19 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
 
-        self.screen = QWidget()
-        self.setCentralWidget(self.screen)
+        self.screen_stack = QStackedWidget()
+        self.setCentralWidget(self.screen_stack)
 
-        self.layout = QVBoxLayout()
-        self.configure_layout()
+        self.main_screen = QWidget()
+        self.screen_stack.addWidget(self.main_screen)
+        self.layout = QVBoxLayout(self.main_screen)
+        self.layout.setContentsMargins(30,50,30,30)
+
+        self.add_alarm_screen = QWidget()
+        self.screen_stack.addWidget(self.add_alarm_screen)
+        self.add_alarm_layout = QVBoxLayout(self.add_alarm_screen)
+        self.add_alarm_title = QLabel('ALARMS')
+        self.configure_alarms_title()
 
         self.time_label = QLabel()
         self.configure_time_display()
@@ -44,10 +53,6 @@ class MainWindow(QMainWindow):
         self.clock_timer = QTimer(self)
         self.setup_clock_timer()
         self.update_time()
-
-    def configure_layout(self):
-        self.layout.setContentsMargins(30,50,30,30)
-        self.screen.setLayout(self.layout)
 
     def configure_time_display(self):
         time_font = QFont()
@@ -89,6 +94,16 @@ class MainWindow(QMainWindow):
 
         self.layout.addWidget(self.add_alarm_button,0,Qt.AlignmentFlag.AlignHCenter)
 
+    def configure_alarms_title(self):
+        title_font = QFont()
+        title_font.setPointSize(12)
+        title_font.setBold(True)
+
+        self.add_alarm_title.setFont(title_font)
+        self.add_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.add_alarm_layout.addWidget(self.add_alarm_title)
+
     def setup_clock_timer(self):
         self.clock_timer.timeout.connect(self.update_time)
         self.clock_timer.start(1000)
@@ -98,7 +113,7 @@ class MainWindow(QMainWindow):
         self.time_label.setText(current_time)
 
     def open_add_alarm_screen(self):
-        print('Add alarm button clicked')
+        self.screen_stack.setCurrentWidget(self.add_alarm_screen)
 
 app = QApplication(sys.argv)
 
