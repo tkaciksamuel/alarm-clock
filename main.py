@@ -8,7 +8,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QPushButton,
-    QStackedWidget
+    QStackedWidget,
+    QTimeEdit
 )
 from PyQt6.QtGui import QFont
 
@@ -27,12 +28,6 @@ class MainWindow(QMainWindow):
         self.screen_stack.addWidget(self.main_screen)
         self.layout = QVBoxLayout(self.main_screen)
         self.layout.setContentsMargins(30,50,30,30)
-
-        self.add_alarm_screen = QWidget()
-        self.screen_stack.addWidget(self.add_alarm_screen)
-        self.add_alarm_layout = QVBoxLayout(self.add_alarm_screen)
-        self.add_alarm_title = QLabel('ALARMS')
-        self.configure_alarms_title()
 
         self.time_label = QLabel()
         self.configure_time_display()
@@ -54,6 +49,19 @@ class MainWindow(QMainWindow):
         self.setup_clock_timer()
         self.update_time()
 
+        self.add_alarm_screen = QWidget()
+        self.screen_stack.addWidget(self.add_alarm_screen)
+        self.add_alarm_layout = QVBoxLayout(self.add_alarm_screen)
+        self.add_alarm_layout.setContentsMargins(30,10,30,30)
+
+        self.add_alarm_title = QLabel('ALARMS')
+        self.configure_alarms_title()
+
+        self.new_alarm_button = QPushButton('+ Add alarm')
+        self.configure_new_alarm_button()
+
+        self.add_alarm_layout.addStretch()
+
     def configure_time_display(self):
         time_font = QFont()
         time_font.setPointSize(48)
@@ -71,6 +79,7 @@ class MainWindow(QMainWindow):
         self.next_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.layout.addWidget(self.next_alarm_title)
+        self.layout.addStretch()
 
     def configure_next_alarm_display(self):
         next_alarm_font = QFont()
@@ -102,7 +111,21 @@ class MainWindow(QMainWindow):
         self.add_alarm_title.setFont(title_font)
         self.add_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.add_alarm_layout.addWidget(self.add_alarm_title)
+        self.add_alarm_layout.addWidget(self.add_alarm_title,0,Qt.AlignmentFlag.AlignTop)
+
+
+    def configure_new_alarm_button(self):
+        button_font = QFont()
+        button_font.setPointSize(14)
+
+        self.new_alarm_button.setFont(button_font)
+        self.new_alarm_button.setFixedHeight(50)
+
+        self.new_alarm_button.setStyleSheet(
+            'text-align: left; padding-left: 12px;'
+        )
+
+        self.add_alarm_layout.addWidget(self.new_alarm_button)
 
     def setup_clock_timer(self):
         self.clock_timer.timeout.connect(self.update_time)
