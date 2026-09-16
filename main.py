@@ -28,45 +28,18 @@ class MainWindow(QMainWindow):
         self.screen_stack.addWidget(self.main_screen)
         self.main_screen.open_add_alarm_screen.connect(self.open_add_alarm_screen)
 
-        self.add_alarm_screen = QWidget()
+        self.add_alarm_screen = AddAlarmScreen()
         self.screen_stack.addWidget(self.add_alarm_screen)
-        self.add_alarm_layout = QVBoxLayout(self.add_alarm_screen)
-        self.add_alarm_layout.setContentsMargins(30,10,30,30)
+        self.add_alarm_screen.open_set_alarm_screen.connect(self.open_set_alarm_screen)
 
-        self.add_alarm_title = QLabel('ALARMS')
-        self.configure_alarms_title()
-
-        self.new_alarm_button = QPushButton('+ Add alarm')
-        self.configure_new_alarm_button()
-
-        self.add_alarm_layout.addStretch()
-
-    def configure_alarms_title(self):
-        title_font = QFont()
-        title_font.setPointSize(12)
-        title_font.setBold(True)
-
-        self.add_alarm_title.setFont(title_font)
-        self.add_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.add_alarm_layout.addWidget(self.add_alarm_title,0,Qt.AlignmentFlag.AlignTop)
-
-
-    def configure_new_alarm_button(self):
-        button_font = QFont()
-        button_font.setPointSize(14)
-
-        self.new_alarm_button.setFont(button_font)
-        self.new_alarm_button.setFixedHeight(50)
-
-        self.new_alarm_button.setStyleSheet(
-            'text-align: left; padding-left: 12px;'
-        )
-
-        self.add_alarm_layout.addWidget(self.new_alarm_button)
+        self.set_alarm_screen = SetAlarmScreen()
+        self.screen_stack.addWidget(self.set_alarm_screen)
 
     def open_add_alarm_screen(self):
         self.screen_stack.setCurrentWidget(self.add_alarm_screen)
+
+    def open_set_alarm_screen(self):
+        self.screen_stack.setCurrentWidget(self.set_alarm_screen)
 
 
 class MainScreen(QWidget):
@@ -92,7 +65,7 @@ class MainScreen(QWidget):
         self.layout.addStretch(1)
 
         self.add_alarm_button = QPushButton('Add alarm')
-        self.configure_add_alarm_button()
+        self.configure_new_alarm_button()
 
         self.clock_timer = QTimer(self)
         self.setup_clock_timer()
@@ -125,7 +98,7 @@ class MainScreen(QWidget):
 
         self.layout.addWidget(self.next_alarm_label)
 
-    def configure_add_alarm_button(self):
+    def configure_new_alarm_button(self):
         self.add_alarm_button.clicked.connect(self.open_add_alarm_screen.emit)
 
         self.add_alarm_button.setFixedHeight(30)
@@ -148,10 +121,66 @@ class MainScreen(QWidget):
 
 
 class AddAlarmScreen(QWidget):
-    pass
+    open_set_alarm_screen = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(30, 10, 30, 30)
+
+        self.add_alarm_title = QLabel('ALARMS')
+        self.configure_alarms_title()
+
+        self.add_alarm_button = QPushButton('+ Add alarm')
+        self.configure_add_alarm_button()
+
+        self.layout.addStretch()
+
+    def configure_alarms_title(self):
+        title_font = QFont()
+        title_font.setPointSize(12)
+        title_font.setBold(True)
+
+        self.add_alarm_title.setFont(title_font)
+        self.add_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.layout.addWidget(self.add_alarm_title,0,Qt.AlignmentFlag.AlignTop)
+
+    def configure_add_alarm_button(self):
+        button_font = QFont()
+        button_font.setPointSize(14)
+
+        self.add_alarm_button.setFont(button_font)
+        self.add_alarm_button.setFixedHeight(50)
+
+        self.add_alarm_button.setStyleSheet(
+            'text-align: left; padding-left: 12px;'
+        )
+
+        self.add_alarm_button.clicked.connect(self.open_set_alarm_screen.emit)
+
+        self.layout.addWidget(self.add_alarm_button)
 
 class SetAlarmScreen(QWidget):
-    pass
+    def __init__(self):
+        super().__init__()
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(30, 10, 30, 30)
+
+        self.set_alarm_title = QLabel('SET ALARM')
+        self.configure_set_alarm_title()
+
+    def configure_set_alarm_title(self):
+        title_font = QFont()
+        title_font.setPointSize(12)
+        title_font.setBold(True)
+
+        self.set_alarm_title.setFont(title_font)
+        self.set_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.layout.addWidget(self.set_alarm_title,0,Qt.AlignmentFlag.AlignTop)
 
 class SettingsScreen(QWidget):
     pass
