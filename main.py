@@ -172,6 +172,16 @@ class SetAlarmScreen(QWidget):
         self.set_alarm_title = QLabel('SET ALARM')
         self.configure_set_alarm_title()
 
+        self.layout.addSpacing(100)
+
+        self.time_selector = QTimeEdit()
+        self.configure_time_selector()
+
+        self.layout.addStretch(1)
+
+        self.save_alarm_button = QPushButton('Save alarm')
+        self.configure_save_alarm_button()
+
     def configure_set_alarm_title(self):
         title_font = QFont()
         title_font.setPointSize(12)
@@ -181,6 +191,23 @@ class SetAlarmScreen(QWidget):
         self.set_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.layout.addWidget(self.set_alarm_title,0,Qt.AlignmentFlag.AlignTop)
+
+    def configure_time_selector(self):
+        self.time_selector.setTime(QTime.currentTime())
+        self.time_selector.setDisplayFormat('HH:mm')
+        self.time_selector.setButtonSymbols(QTimeEdit.ButtonSymbols.NoButtons)
+
+        time_font = QFont()
+        time_font.setPointSize(70)
+
+        self.time_selector.setFont(time_font)
+        self.time_selector.setStyleSheet('QTimeEdit { border: none; background: transparent; }')
+        self.time_selector.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.layout.addWidget(self.time_selector)
+
+    def configure_save_alarm_button(self):
+        pass
 
 class SettingsScreen(QWidget):
     pass
