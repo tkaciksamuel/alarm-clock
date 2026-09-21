@@ -9,7 +9,8 @@ from PyQt6.QtWidgets import (
     QWidget,
     QPushButton,
     QStackedWidget,
-    QTimeEdit
+    QTimeEdit,
+    QLineEdit
 )
 from PyQt6.QtGui import QFont
 
@@ -177,6 +178,11 @@ class SetAlarmScreen(QWidget):
         self.time_selector = QTimeEdit()
         self.configure_time_selector()
 
+        self.layout.addSpacing(50)
+
+        self.alarm_name = QLineEdit()
+        self.configure_alarm_name()
+
         self.layout.addStretch(1)
 
         self.save_alarm_button = QPushButton('Save alarm')
@@ -207,6 +213,28 @@ class SetAlarmScreen(QWidget):
         self.layout.addWidget(self.time_selector)
 
     def configure_save_alarm_button(self):
+        self.save_alarm_button.setStyleSheet(
+            """
+            QPushButton {
+                border: 2px solid #333333;
+                border-radius: 16px;
+                padding: 6px 16px;
+            }
+            """
+        )
+
+        button_font = QFont()
+        button_font.setPointSize(12)
+
+        self.save_alarm_button.setFont(button_font)
+
+        self.layout.addWidget(self.save_alarm_button,0,Qt.AlignmentFlag.AlignHCenter)
+
+    def configure_alarm_name(self):
+        self.alarm_name.setPlaceholderText('Alarm name')
+        self.layout.addWidget(self.alarm_name)
+
+    def save_alarm(self):
         pass
 
 class SettingsScreen(QWidget):
