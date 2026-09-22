@@ -1,4 +1,7 @@
 import sys
+import json
+from pathlib import Path
+from uuid import uuid4
 
 from PyQt6.QtCore import Qt,QTime,QTimer,pyqtSignal
 from PyQt6.QtWidgets import (
@@ -16,10 +19,13 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QFont
 
+ALARMS_FILE = Path(__file__).parent / 'alarms.json'
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.alarm_store = AlarmsStore(ALARMS_FILE)
+        self.alarms = self.alarm_store.load_alarms()
 
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
@@ -37,12 +43,18 @@ class MainWindow(QMainWindow):
 
         self.set_alarm_screen = SetAlarmScreen()
         self.screen_stack.addWidget(self.set_alarm_screen)
+        self.set_alarm_screen.alarm_saved.connect(self.save_alarm)
 
     def open_add_alarm_screen(self):
         self.screen_stack.setCurrentWidget(self.add_alarm_screen)
 
     def open_set_alarm_screen(self):
         self.screen_stack.setCurrentWidget(self.set_alarm_screen)
+
+    def save_alarm(self, alarm):
+        alarm['id'] = str(uuid4())
+        self.alarms.append(alarm)
+        self.alarm_store.save_alarms(self.alarms)
 
 
 class MainScreen(QWidget):
@@ -166,6 +178,8 @@ class AddAlarmScreen(QWidget):
         self.layout.addWidget(self.add_alarm_button)
 
 class SetAlarmScreen(QWidget):
+    alarm_saved = pyqtSignal(dict)
+
     def __init__(self):
         super().__init__()
 
@@ -246,6 +260,8 @@ class SetAlarmScreen(QWidget):
 
         self.save_alarm_button.setFont(button_font)
 
+        self.save_alarm_button.clicked.connect(self.save_alarm)
+
         self.layout.addWidget(self.save_alarm_button,0,Qt.AlignmentFlag.AlignHCenter)
 
     def configure_alarm_name(self):
@@ -259,10 +275,30 @@ class SetAlarmScreen(QWidget):
         self.layout.addWidget(self.ringtone_selector)
 
     def save_alarm(self):
-        pass
+        alarm = {
+            'time': self.time_selector.time().toString('HH:mm'),
+            'name': self.alarm_name.text(),
+            'ringtone': self.ringtone_selector.currentText(),
+            'recurring': self.recurring_selector.isChecked(),
+        }
+
+        self.alarm_saved.emit(alarm)
 
 class SettingsScreen(QWidget):
     pass
+
+
+class AlarmsStore:
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def load_alarms(self):
+        with self.file_path.open('r', encoding='utf-8') as file:
+            return json.load(file)
+
+    def save_alarms(self, alarms):
+        with self.file_path.open('w', encoding='utf-8') as file:
+            json.dump(alarms,file,indent=4)
 
 app = QApplication(sys.argv)
 
