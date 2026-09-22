@@ -10,7 +10,9 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QStackedWidget,
     QTimeEdit,
-    QLineEdit
+    QLineEdit,
+    QComboBox,
+    QCheckBox
 )
 from PyQt6.QtGui import QFont
 
@@ -183,6 +185,22 @@ class SetAlarmScreen(QWidget):
         self.alarm_name = QLineEdit()
         self.configure_alarm_name()
 
+        self.layout.addSpacing(30)
+
+        self.ringtone_label = QLabel('Select ringtone')
+        self.layout.addWidget(self.ringtone_label)
+
+        self.ringtone_selector = QComboBox()
+        self.configure_ringtone()
+
+        self.layout.addSpacing(30)
+
+        self.recurring_label = QLabel('Recurring')
+        self.layout.addWidget(self.recurring_label)
+
+        self.recurring_selector = QCheckBox()
+        self.layout.addWidget(self.recurring_selector)
+
         self.layout.addStretch(1)
 
         self.save_alarm_button = QPushButton('Save alarm')
@@ -232,7 +250,13 @@ class SetAlarmScreen(QWidget):
 
     def configure_alarm_name(self):
         self.alarm_name.setPlaceholderText('Alarm name')
+
         self.layout.addWidget(self.alarm_name)
+
+    def configure_ringtone(self):
+        self.ringtone_selector.addItems(['Default','Bell','Chime'])
+
+        self.layout.addWidget(self.ringtone_selector)
 
     def save_alarm(self):
         pass
