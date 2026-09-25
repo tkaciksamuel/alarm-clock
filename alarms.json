@@ -5,5 +5,26 @@
         "ringtone": "Chime",
         "recurring": true,
         "id": "102178cd-9950-49d2-9019-93163c24ff48"
+    },
+    {
+        "time": "19:59",
+        "name": "Not so random",
+        "ringtone": "Default",
+        "recurring": false,
+        "id": "f97c781a-7b06-4a6f-9d47-1cd4bb6f4406"
+    },
+    {
+        "time": "21:19",
+        "name": "Alarm",
+        "ringtone": "Default",
+        "recurring": false,
+        "id": "4c5adc6a-c1ea-453a-9993-7d72ca7ddbb3"
+    },
+    {
+        "time": "01:19",
+        "name": "Alarm",
+        "ringtone": "Default",
+        "recurring": true,
+        "id": "c6c98557-0bf8-463c-8ad3-ac80a4bae8e0"
     }
 ]

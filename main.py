@@ -9,13 +9,14 @@ from PyQt6.QtWidgets import (
     QLabel,
     QMainWindow,
     QVBoxLayout,
+    QHBoxLayout,
     QWidget,
     QPushButton,
     QStackedWidget,
     QTimeEdit,
     QLineEdit,
     QComboBox,
-    QCheckBox
+    QCheckBox,
 )
 from PyQt6.QtGui import QFont
 
@@ -38,6 +39,7 @@ class MainWindow(QMainWindow):
         self.main_screen.open_add_alarm_screen.connect(self.open_add_alarm_screen)
 
         self.add_alarm_screen = AddAlarmScreen()
+        self.add_alarm_screen.display_alarms(self.alarms)
         self.screen_stack.addWidget(self.add_alarm_screen)
         self.add_alarm_screen.open_set_alarm_screen.connect(self.open_set_alarm_screen)
 
@@ -55,6 +57,8 @@ class MainWindow(QMainWindow):
         alarm['id'] = str(uuid4())
         self.alarms.append(alarm)
         self.alarm_store.save_alarms(self.alarms)
+        self.add_alarm_screen.display_alarms(self.alarms)
+        self.screen_stack.setCurrentWidget(self.add_alarm_screen)
 
 
 class MainScreen(QWidget):
@@ -147,6 +151,10 @@ class AddAlarmScreen(QWidget):
         self.add_alarm_title = QLabel('ALARMS')
         self.configure_alarms_title()
 
+        self.layout.addSpacing(30)
+
+        self.saved_alarm_buttons = []
+
         self.add_alarm_button = QPushButton('+ Add alarm')
         self.configure_add_alarm_button()
 
@@ -176,6 +184,46 @@ class AddAlarmScreen(QWidget):
         self.add_alarm_button.clicked.connect(self.open_set_alarm_screen.emit)
 
         self.layout.addWidget(self.add_alarm_button)
+
+    def create_saved_alarm_button(self, alarm):
+        button = QPushButton()
+        button.setFixedHeight(50)
+
+        row = QHBoxLayout(button)
+        row.setContentsMargins(12,0,12,0)
+
+        time_label = QLabel(alarm['time'])
+        time_font = QFont()
+        time_font.setPointSize(22)
+        time_label.setFont(time_font)
+
+        name_label = QLabel(alarm['name'])
+
+        row.addWidget(time_label)
+        row.addStretch()
+        row.addWidget(name_label)
+
+        return button
+
+    def display_alarms(self, alarms):
+        for button in self.saved_alarm_buttons:
+            self.layout.removeWidget(button)
+            button.deleteLater()
+
+        self.saved_alarm_buttons.clear()
+
+        for alarm in sorted(alarms, key=self.seconds_until_alarm):
+            button = self.create_saved_alarm_button(alarm)
+            position = self.layout.indexOf(self.add_alarm_button)
+            self.layout.insertWidget(position, button)
+            self.saved_alarm_buttons.append(button)
+
+    def seconds_until_alarm(self, alarm):
+        now = QTime.currentTime()
+        alarm_time = QTime.fromString(alarm['time'], 'HH:mm')
+
+        seconds = now.secsTo(alarm_time)
+        return seconds % (24 * 60 * 60)
 
 class SetAlarmScreen(QWidget):
     alarm_saved = pyqtSignal(dict)
@@ -277,7 +325,7 @@ class SetAlarmScreen(QWidget):
     def save_alarm(self):
         alarm = {
             'time': self.time_selector.time().toString('HH:mm'),
-            'name': self.alarm_name.text(),
+            'name': self.alarm_name.text().strip() or 'Alarm',
             'ringtone': self.ringtone_selector.currentText(),
             'recurring': self.recurring_selector.isChecked(),
         }
