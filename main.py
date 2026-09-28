@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.alarm_store = AlarmsStore(ALARMS_FILE)
         self.alarms = self.alarm_store.load_alarms()
+        self.editing_alarm_id = None
 
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
@@ -39,9 +40,13 @@ class MainWindow(QMainWindow):
         self.main_screen.open_add_alarm_screen.connect(self.open_add_alarm_screen)
 
         self.add_alarm_screen = AddAlarmScreen()
+        self.main_screen.clock_timer.timeout.connect(self.update_next_alarm)
         self.add_alarm_screen.display_alarms(self.alarms)
+        self.update_next_alarm()
         self.screen_stack.addWidget(self.add_alarm_screen)
         self.add_alarm_screen.open_set_alarm_screen.connect(self.open_set_alarm_screen)
+
+        self.add_alarm_screen.alarm_selected.connect(self.open_edit_alarm_screen)
 
         self.set_alarm_screen = SetAlarmScreen()
         self.screen_stack.addWidget(self.set_alarm_screen)
@@ -51,14 +56,40 @@ class MainWindow(QMainWindow):
         self.screen_stack.setCurrentWidget(self.add_alarm_screen)
 
     def open_set_alarm_screen(self):
+        self.editing_alarm_id = None
+        self.set_alarm_screen.reset_form()
         self.screen_stack.setCurrentWidget(self.set_alarm_screen)
 
+    def open_edit_alarm_screen(self, alarm):
+        self.editing_alarm_id = alarm['id']
+        self.set_alarm_screen.load_alarm(alarm)
+        self.screen_stack.setCurrentWidget(self.set_alarm_screen)
+
+
     def save_alarm(self, alarm):
-        alarm['id'] = str(uuid4())
-        self.alarms.append(alarm)
+        if self.editing_alarm_id is None:
+            alarm['id'] = str(uuid4())
+            self.alarms.append(alarm)
+        else:
+            for saved_alarm in self.alarms:
+                if saved_alarm['id'] == self.editing_alarm_id:
+                    saved_alarm.update(alarm)
+                    break
+            self.editing_alarm_id = None
+
         self.alarm_store.save_alarms(self.alarms)
         self.add_alarm_screen.display_alarms(self.alarms)
+        self.update_next_alarm()
         self.screen_stack.setCurrentWidget(self.add_alarm_screen)
+
+    def update_next_alarm(self):
+        next_alarm = min(
+            self.alarms,
+            key=self.add_alarm_screen.seconds_until_alarm,
+            default=None
+        )
+
+        self.main_screen.display_next_alarm(next_alarm)
 
 
 class MainScreen(QWidget):
@@ -110,7 +141,7 @@ class MainScreen(QWidget):
 
     def configure_next_alarm_display(self):
         next_alarm_font = QFont()
-        next_alarm_font.setPointSize(18)
+        next_alarm_font.setPointSize(28)
 
         self.next_alarm_label.setFont(next_alarm_font)
         self.next_alarm_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -138,9 +169,18 @@ class MainScreen(QWidget):
         current_time = QTime.currentTime().toString('HH:mm')
         self.time_label.setText(current_time)
 
+    def display_next_alarm(self, alarm):
+        if alarm is None:
+            self.next_alarm_label.setText('No alarms set')
+        else:
+            self.next_alarm_label.setText(
+                f"{alarm['time']}"
+            )
+
 
 class AddAlarmScreen(QWidget):
     open_set_alarm_screen = pyqtSignal()
+    alarm_selected = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
@@ -202,6 +242,11 @@ class AddAlarmScreen(QWidget):
         row.addWidget(time_label)
         row.addStretch()
         row.addWidget(name_label)
+
+        button.clicked.connect(
+            lambda checked=False, selected_alarm=alarm:
+                self.alarm_selected.emit(selected_alarm)
+        )
 
         return button
 
@@ -331,6 +376,18 @@ class SetAlarmScreen(QWidget):
         }
 
         self.alarm_saved.emit(alarm)
+
+    def load_alarm(self, alarm):
+        self.time_selector.setTime(QTime.fromString(alarm['time'], 'HH:mm'))
+        self.alarm_name.setText(alarm['name'])
+        self.ringtone_selector.setCurrentText(alarm['ringtone'])
+        self.recurring_selector.setChecked(alarm['recurring'])
+
+    def reset_form(self):
+        self.time_selector.setTime(QTime.currentTime())
+        self.alarm_name.clear()
+        self.ringtone_selector.setCurrentIndex(0)
+        self.recurring_selector.setChecked(False)
 
 class SettingsScreen(QWidget):
     pass
