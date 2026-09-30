@@ -33,5 +33,19 @@
         "ringtone": "Default",
         "recurring": false,
         "id": "43d7894a-7081-497a-af1e-c8f6f0925d44"
+    },
+    {
+        "time": "22:28",
+        "name": "Katka",
+        "ringtone": "Default",
+        "recurring": false,
+        "id": "3bf77833-f1cc-4199-9859-82753224abcc"
+    },
+    {
+        "time": "22:30",
+        "name": "Alarm",
+        "ringtone": "Default",
+        "recurring": false,
+        "id": "42d76be2-f15c-4dcc-865b-c5b02476c3b8"
     }
 ]

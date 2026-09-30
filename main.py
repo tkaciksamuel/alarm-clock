@@ -22,12 +22,22 @@ from PyQt6.QtGui import QFont
 
 ALARMS_FILE = Path(__file__).parent / 'alarms.json'
 
+
+def seconds_until_alarm(alarm):
+    now = QTime.currentTime()
+    alarm_time = QTime.fromString(alarm['time'], 'HH:mm')
+
+    seconds = now.secsTo(alarm_time)
+    return seconds % (24 * 60 * 60)
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.alarm_store = AlarmsStore(ALARMS_FILE)
         self.alarms = self.alarm_store.load_alarms()
         self.editing_alarm_id = None
+        self.triggered_alarm_ids = set()
+        self.last_checked_minute = None
 
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
@@ -35,19 +45,29 @@ class MainWindow(QMainWindow):
         self.screen_stack = QStackedWidget()
         self.setCentralWidget(self.screen_stack)
 
+        self.setup_main_screen()
+
+        self.setup_add_alarm_screen()
+
+        self.setup_set_alarm_screen()
+
+        self.main_screen.clock_timer.timeout.connect(self.update_next_alarm)
+        self.main_screen.clock_timer.timeout.connect(self.check_alarms)
+        self.update_next_alarm()
+
+    def setup_main_screen(self):
         self.main_screen = MainScreen()
         self.screen_stack.addWidget(self.main_screen)
         self.main_screen.open_add_alarm_screen.connect(self.open_add_alarm_screen)
 
+    def setup_add_alarm_screen(self):
         self.add_alarm_screen = AddAlarmScreen()
-        self.main_screen.clock_timer.timeout.connect(self.update_next_alarm)
         self.add_alarm_screen.display_alarms(self.alarms)
-        self.update_next_alarm()
         self.screen_stack.addWidget(self.add_alarm_screen)
         self.add_alarm_screen.open_set_alarm_screen.connect(self.open_set_alarm_screen)
-
         self.add_alarm_screen.alarm_selected.connect(self.open_edit_alarm_screen)
 
+    def setup_set_alarm_screen(self):
         self.set_alarm_screen = SetAlarmScreen()
         self.screen_stack.addWidget(self.set_alarm_screen)
         self.set_alarm_screen.alarm_saved.connect(self.save_alarm)
@@ -85,12 +105,24 @@ class MainWindow(QMainWindow):
     def update_next_alarm(self):
         next_alarm = min(
             self.alarms,
-            key=self.add_alarm_screen.seconds_until_alarm,
+            key=seconds_until_alarm,
             default=None
         )
 
         self.main_screen.display_next_alarm(next_alarm)
 
+    def check_alarms(self):
+        current_minute = QTime.currentTime().toString('HH:mm')
+
+        if current_minute != self.last_checked_minute:
+            self.triggered_alarm_ids.clear()
+            self.last_checked_minute = current_minute
+
+        for alarm in self.alarms:
+            if alarm['time'] == current_minute:
+                if alarm['id'] not in self.triggered_alarm_ids:
+                    self.triggered_alarm_ids.add(alarm['id'])
+                    print(f"Alarm triggered:{alarm['time']},{alarm['name']}")
 
 class MainScreen(QWidget):
     open_add_alarm_screen = pyqtSignal()
@@ -257,18 +289,12 @@ class AddAlarmScreen(QWidget):
 
         self.saved_alarm_buttons.clear()
 
-        for alarm in sorted(alarms, key=self.seconds_until_alarm):
+        for alarm in sorted(alarms, key=seconds_until_alarm):
             button = self.create_saved_alarm_button(alarm)
             position = self.layout.indexOf(self.add_alarm_button)
             self.layout.insertWidget(position, button)
             self.saved_alarm_buttons.append(button)
 
-    def seconds_until_alarm(self, alarm):
-        now = QTime.currentTime()
-        alarm_time = QTime.fromString(alarm['time'], 'HH:mm')
-
-        seconds = now.secsTo(alarm_time)
-        return seconds % (24 * 60 * 60)
 
 class SetAlarmScreen(QWidget):
     alarm_saved = pyqtSignal(dict)
@@ -388,6 +414,9 @@ class SetAlarmScreen(QWidget):
         self.alarm_name.clear()
         self.ringtone_selector.setCurrentIndex(0)
         self.recurring_selector.setChecked(False)
+
+class RingAlarmScreen(QWidget):
+    pass
 
 class SettingsScreen(QWidget):
     pass
