@@ -51,6 +51,8 @@ class MainWindow(QMainWindow):
 
         self.setup_set_alarm_screen()
 
+        self.setup_ring_alarm_screen()
+
         self.main_screen.clock_timer.timeout.connect(self.update_next_alarm)
         self.main_screen.clock_timer.timeout.connect(self.check_alarms)
         self.update_next_alarm()
@@ -72,6 +74,10 @@ class MainWindow(QMainWindow):
         self.screen_stack.addWidget(self.set_alarm_screen)
         self.set_alarm_screen.alarm_saved.connect(self.save_alarm)
 
+    def setup_ring_alarm_screen(self):
+        self.ring_alarm_screen = RingAlarmScreen()
+        self.screen_stack.addWidget(self.ring_alarm_screen)
+
     def open_add_alarm_screen(self):
         self.screen_stack.setCurrentWidget(self.add_alarm_screen)
 
@@ -84,6 +90,12 @@ class MainWindow(QMainWindow):
         self.editing_alarm_id = alarm['id']
         self.set_alarm_screen.load_alarm(alarm)
         self.screen_stack.setCurrentWidget(self.set_alarm_screen)
+
+    def open_ring_alarm_screen(self, alarm):
+        triggered_time = QTime.currentTime().toString('HH:mm')
+
+        self.ring_alarm_screen.time_label.setText(triggered_time)
+        self.screen_stack.setCurrentWidget(self.ring_alarm_screen)
 
 
     def save_alarm(self, alarm):
@@ -122,7 +134,7 @@ class MainWindow(QMainWindow):
             if alarm['time'] == current_minute:
                 if alarm['id'] not in self.triggered_alarm_ids:
                     self.triggered_alarm_ids.add(alarm['id'])
-                    print(f"Alarm triggered:{alarm['time']},{alarm['name']}")
+                    self.open_ring_alarm_screen(alarm)
 
 class MainScreen(QWidget):
     open_add_alarm_screen = pyqtSignal()
@@ -416,7 +428,38 @@ class SetAlarmScreen(QWidget):
         self.recurring_selector.setChecked(False)
 
 class RingAlarmScreen(QWidget):
-    pass
+    def __init__(self):
+        super().__init__()
+
+        self.layout = QVBoxLayout(self)
+        self.setContentsMargins(30,50,30,30)
+
+        self.screen_title = QLabel('ALARM!')
+        self.configure_screen_title()
+
+        self.layout.addSpacing(100)
+
+        self.time_label = QLabel('--:--')
+        self.configure_time_label()
+
+    def configure_screen_title(self):
+        title_font = QFont()
+        title_font.setPointSize(12)
+        title_font.setBold(True)
+
+        self.screen_title.setFont(title_font)
+        self.screen_title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        self.layout.addWidget(self.screen_title)
+
+    def configure_time_label(self):
+        time_font = QFont()
+        time_font.setPointSize(70)
+
+        self.time_label.setFont(time_font)
+        self.time_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        self.layout.addWidget(self.time_label)
 
 class SettingsScreen(QWidget):
     pass

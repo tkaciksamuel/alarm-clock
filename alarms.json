@@ -47,5 +47,26 @@
         "ringtone": "Default",
         "recurring": false,
         "id": "42d76be2-f15c-4dcc-865b-c5b02476c3b8"
+    },
+    {
+        "time": "23:30",
+        "name": "Alarm",
+        "ringtone": "Default",
+        "recurring": false,
+        "id": "bac20cf5-938e-4cf1-aa94-a7c275f95fd9"
+    },
+    {
+        "time": "23:46",
+        "name": "Alarm",
+        "ringtone": "Default",
+        "recurring": false,
+        "id": "53e113e6-bee6-4fb0-a677-f85734d87814"
+    },
+    {
+        "time": "23:50",
+        "name": "Alarm",
+        "ringtone": "Default",
+        "recurring": false,
+        "id": "a9e681fc-2e55-45ef-a4f1-ce26a9a5f89f"
     }
 ]
