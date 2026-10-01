@@ -310,6 +310,7 @@ class AddAlarmScreen(QWidget):
 
 class SetAlarmScreen(QWidget):
     alarm_saved = pyqtSignal(dict)
+    delete_request = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -348,8 +349,13 @@ class SetAlarmScreen(QWidget):
 
         self.layout.addStretch(1)
 
+        self.configure_action_buttons_layout()
+
         self.save_alarm_button = QPushButton('Save alarm')
         self.configure_save_alarm_button()
+
+        self.delete_alarm_button = QPushButton('Delete alarm')
+        self.configure_delete_alarm_button()
 
     def configure_set_alarm_title(self):
         title_font = QFont()
@@ -375,6 +381,16 @@ class SetAlarmScreen(QWidget):
 
         self.layout.addWidget(self.time_selector)
 
+    def configure_alarm_name(self):
+        self.alarm_name.setPlaceholderText('Alarm name')
+
+        self.layout.addWidget(self.alarm_name)
+
+    def configure_ringtone(self):
+        self.ringtone_selector.addItems(['Default','Bell','Chime'])
+
+        self.layout.addWidget(self.ringtone_selector)
+
     def configure_save_alarm_button(self):
         self.save_alarm_button.setStyleSheet(
             """
@@ -393,17 +409,24 @@ class SetAlarmScreen(QWidget):
 
         self.save_alarm_button.clicked.connect(self.save_alarm)
 
-        self.layout.addWidget(self.save_alarm_button,0,Qt.AlignmentFlag.AlignHCenter)
+        self.action_buttons_row.addWidget(self.save_alarm_button)
+        self.action_buttons_row.addStretch()
 
-    def configure_alarm_name(self):
-        self.alarm_name.setPlaceholderText('Alarm name')
+    def configure_delete_alarm_button(self):
+        self.delete_alarm_button.setStyleSheet('border: none;')
 
-        self.layout.addWidget(self.alarm_name)
+        button_font = QFont()
+        button_font.setPointSize(12)
+        self.delete_alarm_button.setFont(button_font)
 
-    def configure_ringtone(self):
-        self.ringtone_selector.addItems(['Default','Bell','Chime'])
+        self.delete_alarm_button.clicked.connect(self.delete_request.emit)
+        self.action_buttons_row.addWidget(self.delete_alarm_button)
+        self.delete_alarm_button.hide()
 
-        self.layout.addWidget(self.ringtone_selector)
+    def configure_action_buttons_layout(self):
+        self.action_buttons_row = QHBoxLayout()
+        self.action_buttons_row.addStretch(1)
+        self.layout.addLayout(self.action_buttons_row)
 
     def save_alarm(self):
         alarm = {
@@ -421,11 +444,19 @@ class SetAlarmScreen(QWidget):
         self.ringtone_selector.setCurrentText(alarm['ringtone'])
         self.recurring_selector.setChecked(alarm['recurring'])
 
+        self.delete_alarm_button.show()
+        self.action_buttons_row.setStretch(0, 0)
+        self.action_buttons_row.setStretch(2, 1)
+
     def reset_form(self):
         self.time_selector.setTime(QTime.currentTime())
         self.alarm_name.clear()
         self.ringtone_selector.setCurrentIndex(0)
         self.recurring_selector.setChecked(False)
+
+        self.delete_alarm_button.hide()
+        self.action_buttons_row.setStretch(0, 1)
+        self.action_buttons_row.setStretch(2, 1)
 
 class RingAlarmScreen(QWidget):
     def __init__(self):
@@ -437,10 +468,20 @@ class RingAlarmScreen(QWidget):
         self.screen_title = QLabel('ALARM!')
         self.configure_screen_title()
 
-        self.layout.addSpacing(100)
+        self.layout.addSpacing(50)
 
         self.time_label = QLabel('--:--')
         self.configure_time_label()
+
+        self.layout.addStretch()
+
+        self.configure_buttons_layout()
+
+        self.postpone_button = QPushButton('X')
+        self.configure_postpone_button()
+
+        self.close_button = QPushButton('✓')
+        self.configure_close_button()
 
     def configure_screen_title(self):
         title_font = QFont()
@@ -460,6 +501,21 @@ class RingAlarmScreen(QWidget):
         self.time_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
         self.layout.addWidget(self.time_label)
+
+    def configure_postpone_button(self):
+        pass
+
+    def configure_close_button(self):
+        pass
+
+    def configure_buttons_layout(self):
+        self.buttons_row = QHBoxLayout()
+        self.postpone_column = QVBoxLayout()
+        self.close_column = QVBoxLayout()
+
+        self.buttons_row.addLayout(self.postpone_column)
+        self.buttons_row.addStretch()
+        self.buttons_row.addLayout(self.close_column)
 
 class SettingsScreen(QWidget):
     pass
