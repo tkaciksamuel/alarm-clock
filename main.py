@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QComboBox,
     QCheckBox,
+    QMessageBox
 )
 from PyQt6.QtGui import QFont
 
@@ -73,6 +74,7 @@ class MainWindow(QMainWindow):
         self.set_alarm_screen = SetAlarmScreen()
         self.screen_stack.addWidget(self.set_alarm_screen)
         self.set_alarm_screen.alarm_saved.connect(self.save_alarm)
+        self.set_alarm_screen.delete_request.connect(self.delete_alarm)
 
     def setup_ring_alarm_screen(self):
         self.ring_alarm_screen = RingAlarmScreen()
@@ -122,6 +124,32 @@ class MainWindow(QMainWindow):
         )
 
         self.main_screen.display_next_alarm(next_alarm)
+
+    def delete_alarm(self):
+        if self.editing_alarm_id is None:
+            return
+
+        answer = QMessageBox.question(
+            self,
+            'Delete alarm',
+            'Are you sure you want to delete this alarm ?',
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+
+        self.alarms = [
+            alarm for alarm in self.alarms
+            if alarm['id'] != self.editing_alarm_id
+        ]
+        self.editing_alarm_id = None
+
+        self.alarm_store.save_alarms(self.alarms)
+        self.add_alarm_screen.display_alarms(self.alarms)
+        self.update_next_alarm()
+        self.screen_stack.setCurrentWidget(self.add_alarm_screen)
 
     def check_alarms(self):
         current_minute = QTime.currentTime().toString('HH:mm')
@@ -463,12 +491,12 @@ class RingAlarmScreen(QWidget):
         super().__init__()
 
         self.layout = QVBoxLayout(self)
-        self.setContentsMargins(30,50,30,30)
+        self.setContentsMargins(30,10,30,30)
 
         self.screen_title = QLabel('ALARM!')
         self.configure_screen_title()
 
-        self.layout.addSpacing(50)
+        self.layout.addSpacing(70)
 
         self.time_label = QLabel('--:--')
         self.configure_time_label()
@@ -477,7 +505,7 @@ class RingAlarmScreen(QWidget):
 
         self.configure_buttons_layout()
 
-        self.postpone_button = QPushButton('X')
+        self.postpone_button = QPushButton('×')
         self.configure_postpone_button()
 
         self.close_button = QPushButton('✓')
@@ -503,10 +531,41 @@ class RingAlarmScreen(QWidget):
         self.layout.addWidget(self.time_label)
 
     def configure_postpone_button(self):
-        pass
+        button_font = QFont()
+        button_font.setPointSize(36)
+
+        self.postpone_button.setFont(button_font)
+        self.postpone_button.setFixedSize(80, 80)
+        self.postpone_button.setStyleSheet(
+            'border: 2px solid #333333; border-radius: 40px;'
+        )
+
+        self.postpone_column.addWidget(
+            self.postpone_button, 0, Qt.AlignmentFlag.AlignHCenter
+        )
+
+        self.postpone_label = QLabel('Postpone')
+        self.postpone_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.postpone_column.addWidget(self.postpone_label)
+
 
     def configure_close_button(self):
-        pass
+        button_font = QFont()
+        button_font.setPointSize(40)
+
+        self.close_button.setFont(button_font)
+        self.close_button.setFixedSize(80, 80)
+        self.close_button.setStyleSheet(
+            'border: 2px solid #333333; border-radius: 40px; padding: 0px;'
+        )
+
+        self.close_column.addWidget(
+            self.close_button, 0, Qt.AlignmentFlag.AlignHCenter
+        )
+
+        self.close_label = QLabel('Close')
+        self.close_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.close_column.addWidget(self.close_label)
 
     def configure_buttons_layout(self):
         self.buttons_row = QHBoxLayout()
@@ -516,6 +575,8 @@ class RingAlarmScreen(QWidget):
         self.buttons_row.addLayout(self.postpone_column)
         self.buttons_row.addStretch()
         self.buttons_row.addLayout(self.close_column)
+
+        self.layout.addLayout(self.buttons_row)
 
 class SettingsScreen(QWidget):
     pass

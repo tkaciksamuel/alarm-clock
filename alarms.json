@@ -1,72 +1,51 @@
 [
     {
-        "time": "00:32",
+        "time": "14:41",
         "name": "Random",
         "ringtone": "Bell",
         "recurring": true,
         "id": "102178cd-9950-49d2-9019-93163c24ff48"
     },
     {
-        "time": "19:59",
-        "name": "Not so random",
-        "ringtone": "Default",
-        "recurring": false,
-        "id": "f97c781a-7b06-4a6f-9d47-1cd4bb6f4406"
-    },
-    {
-        "time": "21:19",
-        "name": "Alarm",
-        "ringtone": "Default",
-        "recurring": false,
-        "id": "4c5adc6a-c1ea-453a-9993-7d72ca7ddbb3"
-    },
-    {
-        "time": "01:19",
+        "time": "14:44",
         "name": "Alarm",
         "ringtone": "Default",
         "recurring": true,
         "id": "c6c98557-0bf8-463c-8ad3-ac80a4bae8e0"
     },
     {
-        "time": "00:00",
+        "time": "14:39",
         "name": "Alarm",
         "ringtone": "Default",
         "recurring": false,
         "id": "43d7894a-7081-497a-af1e-c8f6f0925d44"
     },
     {
-        "time": "22:28",
-        "name": "Katka",
-        "ringtone": "Default",
-        "recurring": false,
-        "id": "3bf77833-f1cc-4199-9859-82753224abcc"
-    },
-    {
-        "time": "22:30",
-        "name": "Alarm",
-        "ringtone": "Default",
-        "recurring": false,
-        "id": "42d76be2-f15c-4dcc-865b-c5b02476c3b8"
-    },
-    {
-        "time": "23:30",
+        "time": "14:13",
         "name": "Alarm",
         "ringtone": "Default",
         "recurring": false,
         "id": "bac20cf5-938e-4cf1-aa94-a7c275f95fd9"
     },
     {
-        "time": "23:46",
+        "time": "14:25",
         "name": "Alarm",
         "ringtone": "Default",
         "recurring": false,
         "id": "53e113e6-bee6-4fb0-a677-f85734d87814"
     },
     {
-        "time": "23:50",
+        "time": "14:37",
         "name": "Alarm",
-        "ringtone": "Default",
+        "ringtone": "Chime",
         "recurring": false,
         "id": "a9e681fc-2e55-45ef-a4f1-ce26a9a5f89f"
+    },
+    {
+        "time": "14:46",
+        "name": "Alarm",
+        "ringtone": "Chime",
+        "recurring": true,
+        "id": "ea51fddb-cc80-4d0c-91a9-55ad0a0313d8"
     }
 ]
