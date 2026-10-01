@@ -79,6 +79,7 @@ class MainWindow(QMainWindow):
     def setup_ring_alarm_screen(self):
         self.ring_alarm_screen = RingAlarmScreen()
         self.screen_stack.addWidget(self.ring_alarm_screen)
+        self.ring_alarm_screen.close_alarm.connect(self.close_ring_alarm)
 
     def open_add_alarm_screen(self):
         self.screen_stack.setCurrentWidget(self.add_alarm_screen)
@@ -99,6 +100,8 @@ class MainWindow(QMainWindow):
         self.ring_alarm_screen.time_label.setText(triggered_time)
         self.screen_stack.setCurrentWidget(self.ring_alarm_screen)
 
+    def close_ring_alarm(self):
+        self.screen_stack.setCurrentWidget(self.main_screen)
 
     def save_alarm(self, alarm):
         if self.editing_alarm_id is None:
@@ -487,6 +490,8 @@ class SetAlarmScreen(QWidget):
         self.action_buttons_row.setStretch(2, 1)
 
 class RingAlarmScreen(QWidget):
+    close_alarm = pyqtSignal()
+
     def __init__(self):
         super().__init__()
 
@@ -505,11 +510,12 @@ class RingAlarmScreen(QWidget):
 
         self.configure_buttons_layout()
 
-        self.postpone_button = QPushButton('×')
+        self.postpone_button = QPushButton('✖')
         self.configure_postpone_button()
 
         self.close_button = QPushButton('✓')
         self.configure_close_button()
+        self.close_button.clicked.connect(self.close_alarm.emit)
 
     def configure_screen_title(self):
         title_font = QFont()
@@ -531,8 +537,8 @@ class RingAlarmScreen(QWidget):
         self.layout.addWidget(self.time_label)
 
     def configure_postpone_button(self):
-        button_font = QFont()
-        button_font.setPointSize(36)
+        button_font = QFont('DejaVu Sans')
+        button_font.setPointSize(32)
 
         self.postpone_button.setFont(button_font)
         self.postpone_button.setFixedSize(80, 80)
@@ -551,7 +557,8 @@ class RingAlarmScreen(QWidget):
 
     def configure_close_button(self):
         button_font = QFont()
-        button_font.setPointSize(40)
+        button_font.setPointSize(36)
+        button_font.setWeight(QFont.Weight.DemiBold)
 
         self.close_button.setFont(button_font)
         self.close_button.setFixedSize(80, 80)
