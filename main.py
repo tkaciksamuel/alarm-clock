@@ -3,7 +3,8 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-from PyQt6.QtCore import Qt,QTime,QTimer,pyqtSignal
+from PyQt6.QtCore import Qt,QTime,QTimer,pyqtSignal,QUrl
+from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtWidgets import (
     QApplication,
     QLabel,
@@ -39,6 +40,7 @@ class MainWindow(QMainWindow):
         self.editing_alarm_id = None
         self.triggered_alarm_ids = set()
         self.last_checked_minute = None
+        self.ringing_alarm = None
 
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
@@ -53,6 +55,10 @@ class MainWindow(QMainWindow):
         self.setup_set_alarm_screen()
 
         self.setup_ring_alarm_screen()
+
+        self.setup_postpone_message()
+
+        self.setup_alarm_sound()
 
         self.main_screen.clock_timer.timeout.connect(self.update_next_alarm)
         self.main_screen.clock_timer.timeout.connect(self.check_alarms)
@@ -80,6 +86,7 @@ class MainWindow(QMainWindow):
         self.ring_alarm_screen = RingAlarmScreen()
         self.screen_stack.addWidget(self.ring_alarm_screen)
         self.ring_alarm_screen.close_alarm.connect(self.close_ring_alarm)
+        self.ring_alarm_screen.postpone_alarm.connect(self.postpone_ring_alarm)
 
     def open_add_alarm_screen(self):
         self.screen_stack.setCurrentWidget(self.add_alarm_screen)
@@ -89,19 +96,67 @@ class MainWindow(QMainWindow):
         self.set_alarm_screen.reset_form()
         self.screen_stack.setCurrentWidget(self.set_alarm_screen)
 
+    def setup_postpone_message(self):
+        self.postpone_message = QLabel()
+        self.postpone_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.statusBar().addWidget(self.postpone_message, 1)
+        self.statusBar().setSizeGripEnabled(False)
+
+    def setup_alarm_sound(self):
+        self.alarm_sound = QSoundEffect(self)
+
+        sound_path = Path(__file__).parent / 'sounds' / 'default.wav'
+        self.alarm_sound.setSource(QUrl.fromLocalFile(str(sound_path)))
+
+        self.alarm_sound.setLoopCount(QSoundEffect.Loop.Infinite.value)
+        self.alarm_sound.setVolume(0.5)
+
     def open_edit_alarm_screen(self, alarm):
         self.editing_alarm_id = alarm['id']
         self.set_alarm_screen.load_alarm(alarm)
         self.screen_stack.setCurrentWidget(self.set_alarm_screen)
 
     def open_ring_alarm_screen(self, alarm):
+        self.ringing_alarm = alarm
+
         triggered_time = QTime.currentTime().toString('HH:mm')
 
         self.ring_alarm_screen.time_label.setText(triggered_time)
         self.screen_stack.setCurrentWidget(self.ring_alarm_screen)
+        self.alarm_sound.play()
 
     def close_ring_alarm(self):
+        self.alarm_sound.stop()
+
+        if self.ringing_alarm is not None and not self.ringing_alarm['recurring']:
+            self.alarms = [
+                alarm for alarm in self.alarms
+                if alarm['id'] != self.ringing_alarm['id']
+            ]
+
+            self.alarm_store.save_alarms(self.alarms)
+            self.add_alarm_screen.display_alarms(self.alarms)
+            self.update_next_alarm()
+
+        self.ringing_alarm = None
         self.screen_stack.setCurrentWidget(self.main_screen)
+
+    def postpone_ring_alarm(self):
+        if self.ringing_alarm is None:
+            return
+
+        self.alarm_sound.stop()
+
+        alarm = self.ringing_alarm
+        QTimer.singleShot(
+            5 * 60 * 1000,
+            lambda: self.open_ring_alarm_screen(alarm)
+        )
+
+        self.ringing_alarm = None
+        self.screen_stack.setCurrentWidget(self.main_screen)
+        self.postpone_message.setText('Alarm was postponed 5 minutes')
+        QTimer.singleShot(3000, self.postpone_message.clear)
 
     def save_alarm(self, alarm):
         if self.editing_alarm_id is None:
@@ -491,6 +546,7 @@ class SetAlarmScreen(QWidget):
 
 class RingAlarmScreen(QWidget):
     close_alarm = pyqtSignal()
+    postpone_alarm = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -512,6 +568,7 @@ class RingAlarmScreen(QWidget):
 
         self.postpone_button = QPushButton('✖')
         self.configure_postpone_button()
+        self.postpone_button.clicked.connect(self.postpone_alarm.emit)
 
         self.close_button = QPushButton('✓')
         self.configure_close_button()
