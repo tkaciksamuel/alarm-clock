@@ -41,6 +41,7 @@ class MainWindow(QMainWindow):
         self.triggered_alarm_ids = set()
         self.last_checked_minute = None
         self.ringing_alarm = None
+        self.postponed_alarm_time = None
 
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
@@ -147,16 +148,29 @@ class MainWindow(QMainWindow):
 
         self.alarm_sound.stop()
 
+        self.postponed_alarm_time = QTime.currentTime().addSecs(5 * 60)
+        self.main_screen.postponed_alarm_display.setText(
+            self.postponed_alarm_time.toString('HH:mm')
+        )
+        self.main_screen.postponed_alarm_title.show()
+        self.main_screen.postponed_alarm_display.show()
+
         alarm = self.ringing_alarm
         QTimer.singleShot(
             5 * 60 * 1000,
-            lambda: self.open_ring_alarm_screen(alarm)
+            lambda: self.ring_postponed_alarm(alarm)
         )
 
         self.ringing_alarm = None
         self.screen_stack.setCurrentWidget(self.main_screen)
         self.postpone_message.setText('Alarm was postponed 5 minutes')
         QTimer.singleShot(3000, self.postpone_message.clear)
+
+    def ring_postponed_alarm(self, alarm):
+        self.postponed_alarm_time = None
+        self.main_screen.postponed_alarm_title.hide()
+        self.main_screen.postponed_alarm_display.hide()
+        self.open_ring_alarm_screen(alarm)
 
     def save_alarm(self, alarm):
         if self.editing_alarm_id is None:
@@ -239,8 +253,14 @@ class MainScreen(QWidget):
         self.next_alarm_title = QLabel('NEXT ALARM')
         self.configure_next_alarm_title()
 
-        self.next_alarm_label = QLabel('No alarms set')
+        self.next_alarm_display = QLabel('No alarms set')
         self.configure_next_alarm_display()
+
+        self.postponed_alarm_title = QLabel('POSTPONED ALARM')
+        self.configure_postponed_alarm_title()
+
+        self.postponed_alarm_display = QLabel('No postponed alarm')
+        self.configure_postponed_alarm_display()
 
         self.layout.addStretch(1)
 
@@ -273,10 +293,25 @@ class MainScreen(QWidget):
         next_alarm_font = QFont()
         next_alarm_font.setPointSize(28)
 
-        self.next_alarm_label.setFont(next_alarm_font)
-        self.next_alarm_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.next_alarm_display.setFont(next_alarm_font)
+        self.next_alarm_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.layout.addWidget(self.next_alarm_label)
+        self.layout.addWidget(self.next_alarm_display)
+
+    def configure_postponed_alarm_title(self):
+        self.postponed_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.postponed_alarm_title)
+        self.postponed_alarm_title.hide()
+
+    def configure_postponed_alarm_display(self):
+        time_font = QFont()
+        time_font.setPointSize(28)
+
+        self.postponed_alarm_display.setFont(time_font)
+        self.postponed_alarm_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.layout.addWidget(self.postponed_alarm_display)
+        self.postponed_alarm_display.hide()
 
     def configure_new_alarm_button(self):
         self.add_alarm_button.clicked.connect(self.open_add_alarm_screen.emit)
@@ -301,9 +336,9 @@ class MainScreen(QWidget):
 
     def display_next_alarm(self, alarm):
         if alarm is None:
-            self.next_alarm_label.setText('No alarms set')
+            self.next_alarm_display.setText('No alarms set')
         else:
-            self.next_alarm_label.setText(
+            self.next_alarm_display.setText(
                 f"{alarm['time']}"
             )
 
@@ -311,12 +346,18 @@ class MainScreen(QWidget):
 class AddAlarmScreen(QWidget):
     open_set_alarm_screen = pyqtSignal()
     alarm_selected = pyqtSignal(dict)
+    back_requested = pyqtSignal()
 
     def __init__(self):
         super().__init__()
 
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(30, 10, 30, 30)
+
+        self.configure_header_layout()
+
+        self.back_button = QPushButton('Back')
+        self.configure_back_button()
 
         self.add_alarm_title = QLabel('ALARMS')
         self.configure_alarms_title()
@@ -329,6 +370,12 @@ class AddAlarmScreen(QWidget):
         self.configure_add_alarm_button()
 
         self.layout.addStretch()
+
+    def configure_header_layout(self):
+        pass
+
+    def configure_back_button(self):
+        pass
 
     def configure_alarms_title(self):
         title_font = QFont()
