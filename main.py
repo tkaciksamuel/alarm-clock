@@ -18,7 +18,8 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QComboBox,
     QCheckBox,
-    QMessageBox
+    QMessageBox,
+
 )
 from PyQt6.QtGui import QFont
 
@@ -76,6 +77,7 @@ class MainWindow(QMainWindow):
         self.screen_stack.addWidget(self.add_alarm_screen)
         self.add_alarm_screen.open_set_alarm_screen.connect(self.open_set_alarm_screen)
         self.add_alarm_screen.alarm_selected.connect(self.open_edit_alarm_screen)
+        self.add_alarm_screen.back_requested.connect(self.open_main_screen)
 
     def setup_set_alarm_screen(self):
         self.set_alarm_screen = SetAlarmScreen()
@@ -88,6 +90,10 @@ class MainWindow(QMainWindow):
         self.screen_stack.addWidget(self.ring_alarm_screen)
         self.ring_alarm_screen.close_alarm.connect(self.close_ring_alarm)
         self.ring_alarm_screen.postpone_alarm.connect(self.postpone_ring_alarm)
+
+    def open_main_screen(self):
+        self.editing_alarm_id = None
+        self.screen_stack.setCurrentWidget(self.main_screen)
 
     def open_add_alarm_screen(self):
         self.screen_stack.setCurrentWidget(self.add_alarm_screen)
@@ -356,7 +362,7 @@ class AddAlarmScreen(QWidget):
 
         self.configure_header_layout()
 
-        self.back_button = QPushButton('Back')
+        self.back_button = QPushButton('←')
         self.configure_back_button()
 
         self.add_alarm_title = QLabel('ALARMS')
@@ -372,10 +378,22 @@ class AddAlarmScreen(QWidget):
         self.layout.addStretch()
 
     def configure_header_layout(self):
-        pass
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
 
     def configure_back_button(self):
-        pass
+        button_font = QFont()
+        button_font.setPointSize(22)
+
+        self.back_button.setFont(button_font)
+        self.back_button.setFixedSize(40,40)
+        self.back_button.setStyleSheet(
+            'QPushButton { border: none; background: transparent; padding: 0px; }'
+        )
+        self.back_button.setToolTip('Back')
+        self.back_button.clicked.connect(self.back_requested.emit)
+
+        self.header_layout.addWidget(self.back_button)
 
     def configure_alarms_title(self):
         title_font = QFont()
@@ -385,7 +403,8 @@ class AddAlarmScreen(QWidget):
         self.add_alarm_title.setFont(title_font)
         self.add_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.layout.addWidget(self.add_alarm_title,0,Qt.AlignmentFlag.AlignTop)
+        self.header_layout.addWidget(self.add_alarm_title,1)
+        self.header_layout.addSpacing(40)
 
     def configure_add_alarm_button(self):
         button_font = QFont()
