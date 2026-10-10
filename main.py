@@ -84,6 +84,7 @@ class MainWindow(QMainWindow):
         self.screen_stack.addWidget(self.set_alarm_screen)
         self.set_alarm_screen.alarm_saved.connect(self.save_alarm)
         self.set_alarm_screen.delete_request.connect(self.delete_alarm)
+        self.set_alarm_screen.back_requested.connect(self.open_add_alarm_screen)
 
     def setup_ring_alarm_screen(self):
         self.ring_alarm_screen = RingAlarmScreen()
@@ -353,6 +354,7 @@ class AddAlarmScreen(QWidget):
     open_set_alarm_screen = pyqtSignal()
     alarm_selected = pyqtSignal(dict)
     back_requested = pyqtSignal()
+    open_settings_screen = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -367,6 +369,9 @@ class AddAlarmScreen(QWidget):
 
         self.add_alarm_title = QLabel('ALARMS')
         self.configure_alarms_title()
+
+        self.settings_button = QPushButton('⚙')
+        self.configure_settings_button()
 
         self.layout.addSpacing(30)
 
@@ -404,7 +409,20 @@ class AddAlarmScreen(QWidget):
         self.add_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.header_layout.addWidget(self.add_alarm_title,1)
-        self.header_layout.addSpacing(40)
+
+    def configure_settings_button(self):
+        button_font = QFont()
+        button_font.setPointSize(20)
+
+        self.settings_button.setFont(button_font)
+        self.settings_button.setFixedSize(40,40)
+        self.settings_button.setStyleSheet(
+            'QPushButton { border: none; background: transparent; padding: 0px; }'
+        )
+        self.settings_button.setToolTip('Settings')
+        self.settings_button.clicked.connect(self.open_settings_screen.emit)
+
+        self.header_layout.addWidget(self.settings_button)
 
     def configure_add_alarm_button(self):
         button_font = QFont()
@@ -463,12 +481,18 @@ class AddAlarmScreen(QWidget):
 class SetAlarmScreen(QWidget):
     alarm_saved = pyqtSignal(dict)
     delete_request = pyqtSignal()
+    back_requested = pyqtSignal()
 
     def __init__(self):
         super().__init__()
 
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(30, 10, 30, 30)
+
+        self.configure_header_layout()
+
+        self.back_button = QPushButton('←')
+        self.configure_back_button()
 
         self.set_alarm_title = QLabel('SET ALARM')
         self.configure_set_alarm_title()
@@ -509,6 +533,24 @@ class SetAlarmScreen(QWidget):
         self.delete_alarm_button = QPushButton('Delete alarm')
         self.configure_delete_alarm_button()
 
+    def configure_header_layout(self):
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+    def configure_back_button(self):
+        button_font = QFont()
+        button_font.setPointSize(22)
+
+        self.back_button.setFont(button_font)
+        self.back_button.setFixedSize(40, 40)
+        self.back_button.setStyleSheet(
+            'QPushButton { border: none; background: transparent; padding: 0px; }'
+        )
+        self.back_button.setToolTip('Back')
+        self.back_button.clicked.connect(self.back_requested.emit)
+
+        self.header_layout.addWidget(self.back_button)
+
     def configure_set_alarm_title(self):
         title_font = QFont()
         title_font.setPointSize(12)
@@ -517,7 +559,8 @@ class SetAlarmScreen(QWidget):
         self.set_alarm_title.setFont(title_font)
         self.set_alarm_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.layout.addWidget(self.set_alarm_title,0,Qt.AlignmentFlag.AlignTop)
+        self.header_layout.addWidget(self.set_alarm_title,1)
+        self.header_layout.addSpacing(40)
 
     def configure_time_selector(self):
         self.time_selector.setTime(QTime.currentTime())
