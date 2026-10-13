@@ -58,6 +58,8 @@ class MainWindow(QMainWindow):
 
         self.setup_ring_alarm_screen()
 
+        self.setup_settings_screen()
+
         self.setup_postpone_message()
 
         self.setup_alarm_sound()
@@ -92,6 +94,15 @@ class MainWindow(QMainWindow):
         self.ring_alarm_screen.close_alarm.connect(self.close_ring_alarm)
         self.ring_alarm_screen.postpone_alarm.connect(self.postpone_ring_alarm)
 
+    def setup_settings_screen(self):
+        self.settings_screen = SettingsScreen()
+        self.screen_stack.addWidget(self.settings_screen)
+        self.add_alarm_screen.open_settings_screen.connect(
+            self.open_settings_screen
+        )
+
+        self.settings_screen.back_requested.connect(self.open_add_alarm_screen)
+
     def open_main_screen(self):
         self.editing_alarm_id = None
         self.screen_stack.setCurrentWidget(self.main_screen)
@@ -103,6 +114,9 @@ class MainWindow(QMainWindow):
         self.editing_alarm_id = None
         self.set_alarm_screen.reset_form()
         self.screen_stack.setCurrentWidget(self.set_alarm_screen)
+
+    def open_settings_screen(self):
+        self.screen_stack.setCurrentWidget(self.settings_screen)
 
     def setup_postpone_message(self):
         self.postpone_message = QLabel()
@@ -752,7 +766,54 @@ class RingAlarmScreen(QWidget):
         self.layout.addLayout(self.buttons_row)
 
 class SettingsScreen(QWidget):
-    pass
+    back_requested = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(30,10,30,30)
+
+        self.configure_header_layout()
+
+        self.back_button = QPushButton('←')
+        self.configure_back_button()
+
+        self.settings_title = QLabel('SETTINGS')
+        self.configure_settings_title()
+
+        self.layout.addStretch()
+
+    def configure_header_layout(self):
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+    def configure_back_button(self):
+        button_font = QFont()
+        button_font.setPointSize(22)
+
+        self.back_button.setFont(button_font)
+        self.back_button.setFixedSize(40,40)
+        self.back_button.setStyleSheet(
+            'QPushButton { border: none; background: transparent; padding: 0px; }'
+        )
+        self.back_button.setToolTip('Back')
+        self.back_button.clicked.connect(self.back_requested.emit)
+
+        self.header_layout.addWidget(self.back_button)
+
+    def configure_settings_title(self):
+        title_font = QFont()
+        title_font.setPointSize(12)
+        title_font.setBold(True)
+
+        self.settings_title.setFont(title_font)
+        self.settings_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.header_layout.addWidget(self.settings_title, 1)
+        self.header_layout.addSpacing(40)
+
+
 
 
 class AlarmsStore:
