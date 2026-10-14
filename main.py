@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-from PyQt6.QtCore import Qt,QTime,QTimer,pyqtSignal,QUrl
+from PyQt6.QtCore import Qt,QTime,QTimer,pyqtSignal,QUrl,QDate
 from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtWidgets import (
     QApplication,
@@ -102,6 +102,12 @@ class MainWindow(QMainWindow):
         )
 
         self.settings_screen.back_requested.connect(self.open_add_alarm_screen)
+        self.settings_screen.time_format_selector.currentTextChanged.connect(
+            self.change_time_format
+        )
+        self.settings_screen.date_format_selector.currentTextChanged.connect(
+            self.change_date_format
+        )
 
     def open_main_screen(self):
         self.editing_alarm_id = None
@@ -257,17 +263,35 @@ class MainWindow(QMainWindow):
                     self.triggered_alarm_ids.add(alarm['id'])
                     self.open_ring_alarm_screen(alarm)
 
+    def change_time_format(self, selected_format):
+        if selected_format == '12-hour':
+            self.main_screen.time_format = 'hh:mm AP'
+        else:
+            self.main_screen.time_format = 'HH:mm'
+
+        self.main_screen.update_time()
+
+    def change_date_format(self,selected_format):
+        self.main_screen.date_format = selected_format
+        self.main_screen.update_date()
+
 class MainScreen(QWidget):
     open_add_alarm_screen = pyqtSignal()
 
     def __init__(self):
         super().__init__()
 
+        self.time_format = 'HH:mm'
+        self.date_format = 'dd.MM.yyyy'
+
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(30, 50, 30, 30)
 
         self.time_label = QLabel()
         self.configure_time_display()
+
+        self.date_label = QLabel()
+        self.configure_date_display()
 
         self.layout.addStretch(2)
 
@@ -291,6 +315,7 @@ class MainScreen(QWidget):
         self.clock_timer = QTimer(self)
         self.setup_clock_timer()
         self.update_time()
+        self.update_date()
 
     def configure_time_display(self):
         time_font = QFont()
@@ -300,6 +325,15 @@ class MainScreen(QWidget):
         self.time_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.layout.addWidget(self.time_label)
+
+    def configure_date_display(self):
+        date_font = QFont()
+        date_font.setPointSize(16)
+
+        self.date_label.setFont(date_font)
+        self.date_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.layout.addWidget(self.date_label)
 
     def configure_next_alarm_title(self):
         next_alarm_title_font = QFont()
@@ -351,9 +385,15 @@ class MainScreen(QWidget):
         self.clock_timer.timeout.connect(self.update_time)
         self.clock_timer.start(1000)
 
+        self.clock_timer.timeout.connect(self.update_date)
+
     def update_time(self):
-        current_time = QTime.currentTime().toString('HH:mm')
+        current_time = QTime.currentTime().toString(self.time_format)
         self.time_label.setText(current_time)
+
+    def update_date(self):
+        current_date = QDate.currentDate().toString(self.date_format)
+        self.date_label.setText(current_date)
 
     def display_next_alarm(self, alarm):
         if alarm is None:
@@ -782,6 +822,18 @@ class SettingsScreen(QWidget):
         self.settings_title = QLabel('SETTINGS')
         self.configure_settings_title()
 
+        self.time_format_label = QLabel('Time format')
+        self.layout.addWidget(self.time_format_label)
+
+        self.time_format_selector = QComboBox()
+        self.configure_time_format_selector()
+
+        self.date_format_label = QLabel('Date format')
+        self.layout.addWidget(self.date_format_label)
+
+        self.date_format_selector = QComboBox()
+        self.configure_date_format_selector()
+
         self.layout.addStretch()
 
     def configure_header_layout(self):
@@ -813,7 +865,15 @@ class SettingsScreen(QWidget):
         self.header_layout.addWidget(self.settings_title, 1)
         self.header_layout.addSpacing(40)
 
+    def configure_time_format_selector(self):
+        self.time_format_selector.addItems(['24-hour','12-hour'])
+        self.layout.addWidget(self.time_format_selector)
 
+    def configure_date_format_selector(self):
+        self.date_format_selector.addItems(
+            ['dd.MM.yyyy','d MMMM yyyy']
+        )
+        self.layout.addWidget(self.date_format_selector)
 
 
 class AlarmsStore:
