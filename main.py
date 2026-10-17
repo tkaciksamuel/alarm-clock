@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QCheckBox,
     QMessageBox,
+    QSlider
 
 )
 from PyQt6.QtGui import QFont
@@ -108,6 +109,12 @@ class MainWindow(QMainWindow):
         self.settings_screen.date_format_selector.currentTextChanged.connect(
             self.change_date_format
         )
+        self.settings_screen.alarm_volume_slider.valueChanged.connect(
+            self.change_alarm_volume
+        )
+        self.settings_screen.alarm_volume_slider.sliderReleased.connect(
+            self.play_volume_preview
+        )
 
     def open_main_screen(self):
         self.editing_alarm_id = None
@@ -135,6 +142,11 @@ class MainWindow(QMainWindow):
 
         sound_path = Path(__file__).parent / 'sounds' / 'default.wav'
         self.alarm_sound.setSource(QUrl.fromLocalFile(str(sound_path)))
+
+        self.volume_preview = QSoundEffect(self)
+        self.volume_preview.setSource(QUrl.fromLocalFile(str(sound_path)))
+        self.volume_preview.setLoopCount(1)
+        self.volume_preview.setVolume(0.5)
 
         self.alarm_sound.setLoopCount(QSoundEffect.Loop.Infinite.value)
         self.alarm_sound.setVolume(0.5)
@@ -175,22 +187,32 @@ class MainWindow(QMainWindow):
 
         self.alarm_sound.stop()
 
-        self.postponed_alarm_time = QTime.currentTime().addSecs(5 * 60)
+        postpone_minutes = (
+            self.settings_screen.postpone_duration_selector.currentData()
+        )
+        postpone_seconds = postpone_minutes * 60
+
+        self.postponed_alarm_time = QTime.currentTime().addSecs(postpone_seconds)
+
         self.main_screen.postponed_alarm_display.setText(
             self.postponed_alarm_time.toString('HH:mm')
         )
+
         self.main_screen.postponed_alarm_title.show()
         self.main_screen.postponed_alarm_display.show()
 
         alarm = self.ringing_alarm
+
         QTimer.singleShot(
-            5 * 60 * 1000,
+            postpone_seconds * 1000,
             lambda: self.ring_postponed_alarm(alarm)
         )
 
         self.ringing_alarm = None
         self.screen_stack.setCurrentWidget(self.main_screen)
-        self.postpone_message.setText('Alarm was postponed 5 minutes')
+        self.postpone_message.setText(
+            f"Alarm was postponed {postpone_minutes} minutes"
+        )
         QTimer.singleShot(3000, self.postpone_message.clear)
 
     def ring_postponed_alarm(self, alarm):
@@ -274,6 +296,16 @@ class MainWindow(QMainWindow):
     def change_date_format(self,selected_format):
         self.main_screen.date_format = selected_format
         self.main_screen.update_date()
+
+    def change_alarm_volume(self, volume):
+        volume_level = volume / 100.0
+
+        self.alarm_sound.setVolume(volume_level)
+        self.volume_preview.setVolume(volume_level)
+
+    def play_volume_preview(self):
+        self.volume_preview.stop()
+        self.volume_preview.play()
 
 class MainScreen(QWidget):
     open_add_alarm_screen = pyqtSignal()
@@ -834,6 +866,19 @@ class SettingsScreen(QWidget):
         self.date_format_selector = QComboBox()
         self.configure_date_format_selector()
 
+        self.postpone_duration_label = QLabel('Postpone duration')
+        self.layout.addWidget(self.postpone_duration_label)
+
+        self.postpone_duration_selector = QComboBox()
+        self.configure_postpone_duration_selector()
+
+        self.alarm_volume_label = QLabel('Alarm volume')
+        self.layout.addWidget(self.alarm_volume_label)
+
+        self.alarm_volume_slider = QSlider(Qt.Orientation.Horizontal)
+        self.configure_alarm_volume_slider()
+
+
         self.layout.addStretch()
 
     def configure_header_layout(self):
@@ -875,6 +920,28 @@ class SettingsScreen(QWidget):
         )
         self.layout.addWidget(self.date_format_selector)
 
+    def configure_postpone_duration_selector(self):
+        self.postpone_duration_selector.addItem('3 minutes',3)
+        self.postpone_duration_selector.addItem('5 minutes',5)
+        self.postpone_duration_selector.addItem('10 minutes',10)
+        self.postpone_duration_selector.addItem('15 minutes',15)
+
+        self.postpone_duration_selector.setCurrentIndex(
+            self.postpone_duration_selector.findData(5)
+        )
+
+        self.layout.addWidget(self.postpone_duration_selector)
+
+    def configure_alarm_volume_slider(self):
+        self.alarm_volume_slider.setRange(0, 100)
+        self.alarm_volume_slider.setValue(50)
+        self.alarm_volume_slider.valueChanged.connect(
+            lambda volume: self.alarm_volume_label.setText(
+            f'Alarm volume {volume}%'
+            )
+        )
+
+        self.layout.addWidget(self.alarm_volume_slider)
 
 class AlarmsStore:
     def __init__(self, file_path):
