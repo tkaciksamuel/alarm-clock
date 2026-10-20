@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-from PyQt6.QtCore import Qt,QTime,QTimer,pyqtSignal,QUrl,QDate
+from PyQt6.QtCore import Qt,QTime,QTimer,pyqtSignal,QUrl,QDate,QEvent
 from PyQt6.QtMultimedia import QSoundEffect
 from PyQt6.QtWidgets import (
     QApplication,
@@ -103,16 +103,11 @@ class MainWindow(QMainWindow):
         )
 
         self.settings_screen.back_requested.connect(self.open_add_alarm_screen)
-        self.settings_screen.time_format_selector.currentTextChanged.connect(
-            self.change_time_format
-        )
-        self.settings_screen.date_format_selector.currentTextChanged.connect(
-            self.change_date_format
-        )
+        self.settings_screen.apply_requested.connect(self.apply_settings)
         self.settings_screen.alarm_volume_slider.valueChanged.connect(
             self.change_alarm_volume
         )
-        self.settings_screen.alarm_volume_slider.sliderReleased.connect(
+        self.settings_screen.volume_preview_requested.connect(
             self.play_volume_preview
         )
 
@@ -306,6 +301,19 @@ class MainWindow(QMainWindow):
     def play_volume_preview(self):
         self.volume_preview.stop()
         self.volume_preview.play()
+
+    def apply_settings(self):
+        time_format = (
+            self.settings_screen.time_format_selector.currentText()
+        )
+        date_format = (
+            self.settings_screen.date_format_selector.currentText()
+        )
+
+        self.change_time_format(time_format)
+        self.change_date_format(date_format)
+
+        self.open_main_screen()
 
 class MainScreen(QWidget):
     open_add_alarm_screen = pyqtSignal()
@@ -839,12 +847,14 @@ class RingAlarmScreen(QWidget):
 
 class SettingsScreen(QWidget):
     back_requested = pyqtSignal()
+    volume_preview_requested = pyqtSignal()
+    apply_requested = pyqtSignal()
 
     def __init__(self):
         super().__init__()
 
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(30,10,30,30)
+        self.layout.setContentsMargins(30,10,30,10)
 
         self.configure_header_layout()
 
@@ -880,6 +890,9 @@ class SettingsScreen(QWidget):
 
 
         self.layout.addStretch()
+
+        self.apply_button = QPushButton('Apply')
+        self.configure_apply_button()
 
     def configure_header_layout(self):
         self.header_layout = QHBoxLayout()
@@ -940,8 +953,28 @@ class SettingsScreen(QWidget):
             f'Alarm volume {volume}%'
             )
         )
+        self.alarm_volume_slider.installEventFilter(self)
 
         self.layout.addWidget(self.alarm_volume_slider)
+
+    def eventFilter(self, watched, event):
+        if watched is self.alarm_volume_slider:
+            if event.type() == QEvent.Type.MouseButtonRelease:
+                if event.button() == Qt.MouseButton.LeftButton:
+                    self.volume_preview_requested.emit()
+
+        return super().eventFilter(watched, event)
+
+    def configure_apply_button(self):
+        self.apply_button.setFixedSize(80,35)
+
+        self.apply_button_layout = QHBoxLayout()
+        self.apply_button_layout.addStretch()
+        self.apply_button_layout.addWidget(self.apply_button)
+        self.apply_button.clicked.connect(self.apply_requested.emit)
+
+        self.layout.addLayout(self.apply_button_layout)
+
 
 class AlarmsStore:
     def __init__(self, file_path):
