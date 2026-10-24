@@ -1,5 +1,6 @@
 import sys
 import json
+import shutil
 from pathlib import Path
 from uuid import uuid4
 
@@ -1161,6 +1162,38 @@ class RingtoneScreen(QWidget):
 
         if not file_path:
             return
+
+        source = Path(file_path)
+        sounds_folder = Path(__file__).parent / 'sounds'
+        sounds_folder.mkdir(parents=True, exist_ok=True)
+
+        destination = sounds_folder / source.name
+
+        if destination.exists():
+            QMessageBox.information(
+                self,
+                'Sounds already exists',
+                'A sound with this file name already exists'
+            )
+            return
+
+        try:
+            shutil.copy2(source, destination)
+        except OSError as error:
+            QMessageBox.warning(
+                self,
+                'Import failed',
+                f'Could not import the sound:\n{error}'
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            'Sound imported',
+            f'{source.name} was imported successfully.'
+        )
+
+
 
 class BackgroundScreen(QWidget):
     back_requested = pyqtSignal()
