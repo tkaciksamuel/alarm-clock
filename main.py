@@ -19,8 +19,10 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QCheckBox,
     QMessageBox,
-    QSlider
-
+    QSlider,
+    QRadioButton,
+    QButtonGroup,
+    QFileDialog
 )
 from PyQt6.QtGui import QFont
 
@@ -1080,7 +1082,13 @@ class RingtoneScreen(QWidget):
         self.screen_title = QLabel('RINGTONES')
         self.configure_screen_title()
 
+        self.ringtone_group = QButtonGroup()
+        self.configure_ringtone_choices()
+
         self.layout.addStretch()
+
+        self.import_sound_button = QPushButton('+ Import')
+        self.configure_import_sound_button()
 
     def configure_back_button(self):
         button_font = QFont()
@@ -1107,6 +1115,52 @@ class RingtoneScreen(QWidget):
         self.header_layout.addWidget(self.screen_title, 1)
         self.header_layout.addSpacing(40)
 
+    def configure_ringtone_choices(self):
+        for name in ['Default', 'Bell', 'Chime']:
+            button = QRadioButton(name)
+            button_font = QFont()
+            button_font.setPointSize(18)
+            button.setFont(button_font)
+            button.setMaximumHeight(60)
+            button.setStyleSheet(
+                """
+                QRadioButton {
+                    spacing: 16 px;
+                    }
+                    
+                QRadioButton::indicator {
+                    width: 26px;
+                    height: 26px;
+                    }
+                """
+            )
+
+            self.ringtone_group.addButton(button)
+            self.layout.addWidget(button)
+
+            if name == 'Default':
+                button.setChecked(True)
+
+    def configure_import_sound_button(self):
+        self.import_sound_button.setMaximumHeight(45)
+
+        button_font = QFont()
+        button_font.setPointSize(12)
+        self.import_sound_button.setFont(button_font)
+
+        self.import_sound_button.clicked.connect(self.import_sound)
+        self.layout.addWidget(self.import_sound_button)
+
+    def import_sound(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            'Import sound',
+            '',
+            'WAV files (*.wav)'
+        )
+
+        if not file_path:
+            return
 
 class BackgroundScreen(QWidget):
     back_requested = pyqtSignal()
@@ -1123,7 +1177,7 @@ class BackgroundScreen(QWidget):
         self.back_button = QPushButton('←')
         self.configure_back_button()
 
-        self.screen_title = QLabel('BACKGROUNGS')
+        self.screen_title = QLabel('BACKGROUNDS')
         self.configure_screen_title()
 
         self.layout.addStretch()
