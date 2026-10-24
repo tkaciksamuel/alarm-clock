@@ -44,6 +44,8 @@ class MainWindow(QMainWindow):
         self.last_checked_minute = None
         self.ringing_alarm = None
         self.postponed_alarm_time = None
+        self.applied_alarm_volume = 50
+        self.applied_postpone_minutes = 5
 
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
@@ -60,6 +62,10 @@ class MainWindow(QMainWindow):
         self.setup_ring_alarm_screen()
 
         self.setup_settings_screen()
+
+        self.setup_ringtone_screen()
+
+        self.setup_background_screen()
 
         self.setup_postpone_message()
 
@@ -98,18 +104,50 @@ class MainWindow(QMainWindow):
     def setup_settings_screen(self):
         self.settings_screen = SettingsScreen()
         self.screen_stack.addWidget(self.settings_screen)
+        self.settings_screen.alarm_volume_slider.setValue(
+            self.applied_alarm_volume
+        )
+
         self.add_alarm_screen.open_settings_screen.connect(
             self.open_settings_screen
         )
 
         self.settings_screen.back_requested.connect(self.open_add_alarm_screen)
         self.settings_screen.apply_requested.connect(self.apply_settings)
-        self.settings_screen.alarm_volume_slider.valueChanged.connect(
-            self.change_alarm_volume
-        )
         self.settings_screen.volume_preview_requested.connect(
             self.play_volume_preview
         )
+
+    def setup_ringtone_screen(self):
+        self.ringtone_screen = RingtoneScreen()
+        self.screen_stack.addWidget(self.ringtone_screen)
+
+        self.settings_screen.open_ringtone_screen.connect(
+            self.open_ringtone_screen
+        )
+        self.ringtone_screen.back_requested.connect(
+            self.return_to_settings_screen
+        )
+
+    def setup_background_screen(self):
+        self.background_screen = BackgroundScreen()
+        self.screen_stack.addWidget(self.background_screen)
+
+        self.settings_screen.open_background_screen.connect(
+            self.open_background_screen
+        )
+        self.background_screen.back_requested.connect(
+            self.return_to_settings_screen
+        )
+
+    def open_ringtone_screen(self):
+        self.screen_stack.setCurrentWidget(self.ringtone_screen)
+
+    def open_background_screen(self):
+        self.screen_stack.setCurrentWidget(self.background_screen)
+
+    def return_to_settings_screen(self):
+        self.screen_stack.setCurrentWidget(self.settings_screen)
 
     def open_main_screen(self):
         self.editing_alarm_id = None
@@ -124,6 +162,7 @@ class MainWindow(QMainWindow):
         self.screen_stack.setCurrentWidget(self.set_alarm_screen)
 
     def open_settings_screen(self):
+        self.restore_applied_settings()
         self.screen_stack.setCurrentWidget(self.settings_screen)
 
     def setup_postpone_message(self):
@@ -182,9 +221,7 @@ class MainWindow(QMainWindow):
 
         self.alarm_sound.stop()
 
-        postpone_minutes = (
-            self.settings_screen.postpone_duration_selector.currentData()
-        )
+        postpone_minutes = self.applied_postpone_minutes
         postpone_seconds = postpone_minutes * 60
 
         self.postponed_alarm_time = QTime.currentTime().addSecs(postpone_seconds)
@@ -299,7 +336,10 @@ class MainWindow(QMainWindow):
         self.volume_preview.setVolume(volume_level)
 
     def play_volume_preview(self):
+        volume = self.settings_screen.alarm_volume_slider.value()
+        self.volume_preview.setVolume(volume / 100.0)
         self.volume_preview.stop()
+
         self.volume_preview.play()
 
     def apply_settings(self):
@@ -309,11 +349,38 @@ class MainWindow(QMainWindow):
         date_format = (
             self.settings_screen.date_format_selector.currentText()
         )
+        volume = self.settings_screen.alarm_volume_slider.value()
 
+        self.applied_alarm_volume = volume
+        self.applied_postpone_minutes = (
+            self.settings_screen.postpone_duration_selector.currentData()
+        )
+
+        self.change_alarm_volume(volume)
         self.change_time_format(time_format)
         self.change_date_format(date_format)
 
         self.open_main_screen()
+
+    def restore_applied_settings(self):
+        time_format = (
+            '12-hour'
+            if self.main_screen.time_format == 'hh:mm AP'
+            else '24-hour'
+        )
+
+        self.settings_screen.time_format_selector.setCurrentText(time_format)
+        self.settings_screen.date_format_selector.setCurrentText(
+            self.main_screen.date_format
+        )
+        self.settings_screen.alarm_volume_slider.setValue(
+            self.applied_alarm_volume
+        )
+        self.settings_screen.postpone_duration_selector.setCurrentIndex(
+            self.settings_screen.postpone_duration_selector.findData(
+                self.applied_postpone_minutes
+            )
+        )
 
 class MainScreen(QWidget):
     open_add_alarm_screen = pyqtSignal()
@@ -849,6 +916,8 @@ class SettingsScreen(QWidget):
     back_requested = pyqtSignal()
     volume_preview_requested = pyqtSignal()
     apply_requested = pyqtSignal()
+    open_ringtone_screen = pyqtSignal()
+    open_background_screen = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -888,6 +957,11 @@ class SettingsScreen(QWidget):
         self.alarm_volume_slider = QSlider(Qt.Orientation.Horizontal)
         self.configure_alarm_volume_slider()
 
+        self.ringtone_button = QPushButton('Ringtone')
+        self.configure_ringtone_button()
+
+        self.background_button = QPushButton('Background')
+        self.configure_backround_button()
 
         self.layout.addStretch()
 
@@ -965,6 +1039,18 @@ class SettingsScreen(QWidget):
 
         return super().eventFilter(watched, event)
 
+    def configure_ringtone_button(self):
+        self.ringtone_button.setFixedHeight(35)
+        self.ringtone_button.clicked.connect(self.open_ringtone_screen.emit)
+
+        self.layout.addWidget(self.ringtone_button)
+
+    def configure_backround_button(self):
+        self.background_button.setFixedHeight(35)
+        self.background_button.clicked.connect(self.open_background_screen.emit)
+
+        self.layout.addWidget(self.background_button)
+
     def configure_apply_button(self):
         self.apply_button.setFixedSize(80,35)
 
@@ -974,6 +1060,99 @@ class SettingsScreen(QWidget):
         self.apply_button.clicked.connect(self.apply_requested.emit)
 
         self.layout.addLayout(self.apply_button_layout)
+
+
+class RingtoneScreen(QWidget):
+    back_requested = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(30,10,30,30)
+
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+        self.back_button = QPushButton('←')
+        self.configure_back_button()
+
+        self.screen_title = QLabel('RINGTONES')
+        self.configure_screen_title()
+
+        self.layout.addStretch()
+
+    def configure_back_button(self):
+        button_font = QFont()
+        button_font.setPointSize(22)
+
+        self.back_button.setFont(button_font)
+        self.back_button.setFixedSize(40,40)
+        self.back_button.setStyleSheet(
+            'QPushButton { border: none; background: transparent; padding: 0px; }'
+        )
+        self.back_button.setToolTip('Back')
+        self.back_button.clicked.connect(self.back_requested.emit)
+
+        self.header_layout.addWidget(self.back_button)
+
+    def configure_screen_title(self):
+        title_font = QFont()
+        title_font.setPointSize(12)
+        title_font.setBold(True)
+
+        self.screen_title.setFont(title_font)
+        self.screen_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.header_layout.addWidget(self.screen_title, 1)
+        self.header_layout.addSpacing(40)
+
+
+class BackgroundScreen(QWidget):
+    back_requested = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(30,10,30,30)
+
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+        self.back_button = QPushButton('←')
+        self.configure_back_button()
+
+        self.screen_title = QLabel('BACKGROUNGS')
+        self.configure_screen_title()
+
+        self.layout.addStretch()
+
+    def configure_back_button(self):
+        button_font = QFont()
+        button_font.setPointSize(22)
+
+        self.back_button.setFont(button_font)
+        self.back_button.setFixedSize(40,40)
+        self.back_button.setStyleSheet(
+            'QPushButton { border: none; background: transparent; padding: 0px; }'
+        )
+        self.back_button.setToolTip('Back')
+        self.back_button.clicked.connect(self.back_requested.emit)
+
+        self.header_layout.addWidget(self.back_button)
+
+    def configure_screen_title(self):
+        title_font = QFont()
+        title_font.setPointSize(12)
+        title_font.setBold(True)
+
+        self.screen_title.setFont(title_font)
+        self.screen_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.header_layout.addWidget(self.screen_title, 1)
+        self.header_layout.addSpacing(40)
+
 
 
 class AlarmsStore:
