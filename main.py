@@ -49,6 +49,7 @@ class MainWindow(QMainWindow):
         self.postponed_alarm_time = None
         self.applied_alarm_volume = 50
         self.applied_postpone_minutes = 5
+        self.applied_ringtone = 'Default'
 
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
@@ -162,6 +163,7 @@ class MainWindow(QMainWindow):
     def open_set_alarm_screen(self):
         self.editing_alarm_id = None
         self.set_alarm_screen.reset_form()
+        self.set_alarm_screen.ringtone_selector.setCurrentText(self.applied_ringtone)
         self.screen_stack.setCurrentWidget(self.set_alarm_screen)
 
     def open_settings_screen(self):
@@ -200,6 +202,16 @@ class MainWindow(QMainWindow):
 
         self.ring_alarm_screen.time_label.setText(triggered_time)
         self.screen_stack.setCurrentWidget(self.ring_alarm_screen)
+
+        sound_filename = {
+            'Default': 'default.wav',
+            'Bell': 'bell.wav',
+            'Chime': 'chime.wav'
+        }.get(alarm['ringtone'],'default.wav')
+
+        sound_path = Path(__file__).parent / 'sounds' / sound_filename
+        self.alarm_sound.setSource(QUrl.fromLocalFile(str(sound_path)))
+
         self.alarm_sound.play()
 
     def close_ring_alarm(self):
@@ -363,6 +375,8 @@ class MainWindow(QMainWindow):
         self.change_time_format(time_format)
         self.change_date_format(date_format)
 
+        self.applied_ringtone = self.ringtone_screen.get_selected_ringtone()
+
         self.open_main_screen()
 
     def restore_applied_settings(self):
@@ -384,6 +398,7 @@ class MainWindow(QMainWindow):
                 self.applied_postpone_minutes
             )
         )
+        self.ringtone_screen.set_selected_ringtone(self.applied_ringtone)
 
 class MainScreen(QWidget):
     open_add_alarm_screen = pyqtSignal()
@@ -1193,6 +1208,14 @@ class RingtoneScreen(QWidget):
             f'{source.name} was imported successfully.'
         )
 
+    def get_selected_ringtone(self):
+        return self.ringtone_group.checkedButton().text()
+
+    def set_selected_ringtone(self, ringtone):
+        for button in self.ringtone_group.buttons():
+            if button.text() == ringtone:
+                button.setChecked(True)
+                break
 
 
 class BackgroundScreen(QWidget):
