@@ -23,7 +23,8 @@ from PyQt6.QtWidgets import (
     QSlider,
     QRadioButton,
     QButtonGroup,
-    QFileDialog
+    QFileDialog,
+    QInputDialog
 )
 from PyQt6.QtGui import QFont
 
@@ -1132,30 +1133,51 @@ class RingtoneScreen(QWidget):
         self.header_layout.addSpacing(40)
 
     def configure_ringtone_choices(self):
-        for name in ['Default', 'Bell', 'Chime']:
-            button = QRadioButton(name)
-            button_font = QFont()
-            button_font.setPointSize(18)
-            button.setFont(button_font)
-            button.setMaximumHeight(60)
-            button.setStyleSheet(
-                """
-                QRadioButton {
-                    spacing: 16 px;
-                    }
-                    
-                QRadioButton::indicator {
-                    width: 26px;
-                    height: 26px;
-                    }
-                """
-            )
+        sounds_folder = Path(__file__).parent / 'sounds'
+        sounds_folder.mkdir(parents=True, exist_ok=True)
 
-            self.ringtone_group.addButton(button)
-            self.layout.addWidget(button)
+        for name in ['Default','Bell','Chime']:
+            self.add_ringtone_choice(name)
 
-            if name == 'Default':
-                button.setChecked(True)
+        built_in_files = {'default.wav','bell.wav','chime.wav'}
+
+        for sound_path in sorted(sounds_folder.iterdir()):
+            if (
+                sound_path.is_file()
+                and sound_path.suffix.lower() == '.wav'
+                and sound_path.name.lower() not in built_in_files
+            ):
+                self.add_ringtone_choice(sound_path.name)
+
+        self.set_selected_ringtone('Default')
+
+    def add_ringtone_choice(self, name):
+        button = QRadioButton(name)
+
+        button_font = QFont()
+        button_font.setPointSize(18)
+
+        button.setFont(button_font)
+        button.setMaximumHeight(60)
+        button.setStyleSheet(
+            """
+            QRadioButton {
+                spacing: 16px;
+            }
+            
+            QRadioButton::indicator {
+                width: 26px;
+                height: 26px;
+            }
+            """
+        )
+        self.ringtone_group.addButton(button)
+
+        # Keeps ringtone choices together under the header
+        self.layout.insertWidget(
+            len(self.ringtone_group.buttons()),
+            button
+        )
 
     def configure_import_sound_button(self):
         self.import_sound_button.setMaximumHeight(45)
@@ -1168,6 +1190,41 @@ class RingtoneScreen(QWidget):
         self.layout.addWidget(self.import_sound_button)
 
     def import_sound(self):
+        source = self.select_sound_file()
+
+        if source is None:
+            return
+
+        sounds_folder = Path(__file__).parent / 'sounds'
+
+        try:
+            sounds_folder.mkdir(parents=True, exist_ok=True)
+        except OSError as error:
+            QMessageBox.warning(
+                self,
+                'Import failed',
+                f'Could not create the sounds folder:\n{error}'
+            )
+            return
+
+        destination = self.request_sound_name(source, sounds_folder)
+
+        if destination is None:
+            return
+
+        if not self.copy_sound_file(source,destination):
+            return
+
+        self.add_ringtone_choice(destination.name)
+        self.set_selected_ringtone(destination.name)
+
+        QMessageBox.information(
+            self,
+            'Sound imported',
+            f'{destination.name} was imported successfully.'
+        )
+
+    def select_sound_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             'Import sound',
@@ -1175,38 +1232,88 @@ class RingtoneScreen(QWidget):
             'WAV files (*.wav)'
         )
 
-        if not file_path:
-            return
+        return Path(file_path) if file_path else None
 
-        source = Path(file_path)
-        sounds_folder = Path(__file__).parent / 'sounds'
-        sounds_folder.mkdir(parents=True, exist_ok=True)
+    def request_sound_name(self, source, sounds_folder):
+        suggested_name = source.stem
 
-        destination = sounds_folder / source.name
-
-        if destination.exists():
-            QMessageBox.information(
+        while True:
+            name, accepted = QInputDialog.getText(
                 self,
-                'Sounds already exists',
-                'A sound with this file name already exists'
+                'Name your ringtone',
+                'Ringtone name:',
+                text=suggested_name
             )
-            return
 
+            if not accepted:
+                return None
+
+            name = name.strip()
+
+            if name.lower().endswith('.wav'):
+                name = name[:-4].strip()
+
+            suggested_name = name
+
+            if not self.is_valid_sound_name(name):
+                QMessageBox.warning(
+                    self,
+                    'Invalid name',
+                    'Enter a valid name without special characters.'
+                )
+                continue
+
+            destination = sounds_folder / f'{name}.wav'
+
+            if self.sound_name_exists(destination):
+                QMessageBox.information(
+                    self,
+                    'Sound already exists',
+                    'A sound with this name already exists. Choose another name'
+                )
+                continue
+
+            return destination
+
+    def is_valid_sound_name(self,name):
+        invalid_characters = '<>:"/\\|?*'
+        reserved_names = {
+            'CON','PRN','AUX','NUL',
+            *(f'COM{number}' for number in range(1,10)),
+            *(f'LPT{number}' for number in range(1,10))
+        }
+
+        return (
+            bool(name)
+            and not name.endswith('.')
+            and name.split('.')[0].upper() not in reserved_names
+            and not any(character in invalid_characters for character in name)
+            and not any(ord(character) < 32 for character in name)
+        )
+
+    def sound_name_exists(self, destination):
+        if destination.stem.lower() in {'default','bell','chime'}:
+            return True
+
+        return any(
+            path.name.lower() == destination.name.lower()
+            for path in destination.parent.iterdir()
+        )
+
+    def copy_sound_file(self, source, destination):
         try:
-            shutil.copy2(source, destination)
+            shutil.copy2(source,destination)
         except OSError as error:
             QMessageBox.warning(
                 self,
                 'Import failed',
                 f'Could not import the sound:\n{error}'
             )
-            return
+            return False
 
-        QMessageBox.information(
-            self,
-            'Sound imported',
-            f'{source.name} was imported successfully.'
-        )
+        return True
+
+
 
     def get_selected_ringtone(self):
         return self.ringtone_group.checkedButton().text()
