@@ -352,10 +352,15 @@ class MainWindow(QMainWindow):
         self.volume_preview.setVolume(volume_level)
 
     def play_volume_preview(self):
+        ringtone = self.ringtone_screen.get_selected_ringtone()
+        sound_path = self.get_ringtone_path(ringtone)
         volume = self.settings_screen.alarm_volume_slider.value()
-        self.volume_preview.setVolume(volume / 100.0)
-        self.volume_preview.stop()
 
+        self.volume_preview.stop()
+        self.volume_preview.setSource(
+            QUrl.fromLocalFile(str(sound_path))
+        )
+        self.volume_preview.setVolume(volume / 100.0)
         self.volume_preview.play()
 
     def apply_settings(self):
@@ -400,6 +405,17 @@ class MainWindow(QMainWindow):
             )
         )
         self.ringtone_screen.set_selected_ringtone(self.applied_ringtone)
+
+    def get_ringtone_path(self, ringtone):
+        built_in_sounds = {
+            'Default': 'default.wav',
+            'Bell': 'bell.wav',
+            'Chime': 'chime.wav'
+        }
+
+        filename = built_in_sounds.get(ringtone, ringtone)
+
+        return Path(__file__).parent / 'sounds' / filename
 
 class MainScreen(QWidget):
     open_add_alarm_screen = pyqtSignal()
@@ -1152,7 +1168,8 @@ class RingtoneScreen(QWidget):
         self.set_selected_ringtone('Default')
 
     def add_ringtone_choice(self, name):
-        button = QRadioButton(name)
+        button = QRadioButton(Path(name).stem)
+        button.setProperty('ringtone', name)
 
         button_font = QFont()
         button_font.setPointSize(18)
@@ -1316,11 +1333,11 @@ class RingtoneScreen(QWidget):
 
 
     def get_selected_ringtone(self):
-        return self.ringtone_group.checkedButton().text()
+        return self.ringtone_group.checkedButton().property('ringtone')
 
     def set_selected_ringtone(self, ringtone):
         for button in self.ringtone_group.buttons():
-            if button.text() == ringtone:
+            if button.property('ringtone') == ringtone:
                 button.setChecked(True)
                 break
 
