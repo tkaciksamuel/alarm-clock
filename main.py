@@ -133,6 +133,14 @@ class MainWindow(QMainWindow):
         self.ringtone_screen.back_requested.connect(
             self.return_to_settings_screen
         )
+        self.ringtone_screen.ringtone_imported.connect(
+            self.set_alarm_screen.add_ringtone
+        )
+
+        for button in self.ringtone_screen.ringtone_group.buttons():
+            ringtone_name = button.property('ringtone')
+            if self.set_alarm_screen.ringtone_selector.findData(ringtone_name) == -1:
+                self.set_alarm_screen.add_ringtone(ringtone_name)
 
     def setup_background_screen(self):
         self.background_screen = BackgroundScreen()
@@ -778,7 +786,10 @@ class SetAlarmScreen(QWidget):
         self.layout.addWidget(self.alarm_name)
 
     def configure_ringtone(self):
-        self.ringtone_selector.addItems(['Default','Bell','Chime'])
+        built_in_sounds = ['Default','Bell','Chime']
+
+        for ringtone in built_in_sounds:
+            self.ringtone_selector.addItem(ringtone, ringtone)
 
         self.layout.addWidget(self.ringtone_selector)
 
@@ -823,7 +834,7 @@ class SetAlarmScreen(QWidget):
         alarm = {
             'time': self.time_selector.time().toString('HH:mm'),
             'name': self.alarm_name.text().strip() or 'Alarm',
-            'ringtone': self.ringtone_selector.currentText(),
+            'ringtone': self.ringtone_selector.currentData(),
             'recurring': self.recurring_selector.isChecked(),
         }
 
@@ -832,7 +843,8 @@ class SetAlarmScreen(QWidget):
     def load_alarm(self, alarm):
         self.time_selector.setTime(QTime.fromString(alarm['time'], 'HH:mm'))
         self.alarm_name.setText(alarm['name'])
-        self.ringtone_selector.setCurrentText(alarm['ringtone'])
+        index = self.ringtone_selector.findData(alarm['ringtone'])
+        self.ringtone_selector.setCurrentIndex(index)
         self.recurring_selector.setChecked(alarm['recurring'])
 
         self.delete_alarm_button.show()
@@ -848,6 +860,10 @@ class SetAlarmScreen(QWidget):
         self.delete_alarm_button.hide()
         self.action_buttons_row.setStretch(0, 1)
         self.action_buttons_row.setStretch(2, 1)
+
+    def add_ringtone(self, ringtone_name):
+        display_name = Path(ringtone_name).stem
+        self.ringtone_selector.addItem(display_name ,ringtone_name)
 
 class RingAlarmScreen(QWidget):
     close_alarm = pyqtSignal()
@@ -1099,6 +1115,7 @@ class SettingsScreen(QWidget):
 
 class RingtoneScreen(QWidget):
     back_requested = pyqtSignal()
+    ringtone_imported = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -1234,6 +1251,7 @@ class RingtoneScreen(QWidget):
 
         self.add_ringtone_choice(destination.name)
         self.set_selected_ringtone(destination.name)
+        self.ringtone_imported.emit(destination.name)
 
         QMessageBox.information(
             self,
