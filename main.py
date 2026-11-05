@@ -218,7 +218,7 @@ class MainWindow(QMainWindow):
             'Chime': 'chime.wav'
         }.get(alarm['ringtone'],'default.wav')
 
-        sound_path = Path(__file__).parent / 'sounds' / sound_filename
+        sound_path = self.get_ringtone_path(alarm['ringtone'])
         self.alarm_sound.setSource(QUrl.fromLocalFile(str(sound_path)))
 
         self.alarm_sound.play()
@@ -863,6 +863,7 @@ class SetAlarmScreen(QWidget):
 
     def add_ringtone(self, ringtone_name):
         display_name = Path(ringtone_name).stem
+        display_name = display_name[:1].upper() + display_name[1:]
         self.ringtone_selector.addItem(display_name ,ringtone_name)
 
 class RingAlarmScreen(QWidget):
@@ -1185,7 +1186,9 @@ class RingtoneScreen(QWidget):
         self.set_selected_ringtone('Default')
 
     def add_ringtone_choice(self, name):
-        button = QRadioButton(Path(name).stem)
+        display_name = Path(name).stem
+        display_name = display_name[:1].upper() + display_name[1:]
+        button = QRadioButton(display_name)
         button.setProperty('ringtone', name)
 
         button_font = QFont()
