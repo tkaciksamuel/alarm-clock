@@ -22,6 +22,7 @@ from screens.add_alarm_screen import AddAlarmScreen
 from screens.ringtone_screen import RingtoneScreen
 
 from alarm_utils import seconds_until_alarm
+from alarms_store import AlarmsStore
 
 ALARMS_FILE = Path(__file__).parent / 'alarms.json'
 
@@ -198,12 +199,6 @@ class MainWindow(QMainWindow):
 
         self.ring_alarm_screen.time_label.setText(triggered_time)
         self.screen_stack.setCurrentWidget(self.ring_alarm_screen)
-
-        sound_filename = {
-            'Default': 'default.wav',
-            'Bell': 'bell.wav',
-            'Chime': 'chime.wav'
-        }.get(alarm['ringtone'],'default.wav')
 
         sound_path = self.get_ringtone_path(alarm['ringtone'])
         self.alarm_sound.setSource(QUrl.fromLocalFile(str(sound_path)))
@@ -411,19 +406,6 @@ class MainWindow(QMainWindow):
         filename = built_in_sounds.get(ringtone, ringtone)
 
         return Path(__file__).parent / 'sounds' / filename
-
-
-class AlarmsStore:
-    def __init__(self, file_path):
-        self.file_path = file_path
-
-    def load_alarms(self):
-        with self.file_path.open('r', encoding='utf-8') as file:
-            return json.load(file)
-
-    def save_alarms(self, alarms):
-        with self.file_path.open('w', encoding='utf-8') as file:
-            json.dump(alarms,file,indent=4)
 
 app = QApplication(sys.argv)
 

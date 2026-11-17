@@ -1,5 +1,7 @@
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
+from pathlib import Path
+
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -9,6 +11,8 @@ from PyQt6.QtWidgets import (
 )
 
 from alarm_utils import seconds_until_alarm
+
+ICONS_DIR = Path(__file__).resolve().parent.parent / 'icons'
 
 class AddAlarmScreen(QWidget):
     open_set_alarm_screen = pyqtSignal()
@@ -24,13 +28,13 @@ class AddAlarmScreen(QWidget):
 
         self.configure_header_layout()
 
-        self.back_button = QPushButton('←')
+        self.back_button = QPushButton()
         self.configure_back_button()
 
         self.add_alarm_title = QLabel('ALARMS')
         self.configure_alarms_title()
 
-        self.settings_button = QPushButton('⚙')
+        self.settings_button = QPushButton()
         self.configure_settings_button()
 
         self.layout.addSpacing(30)
@@ -47,15 +51,15 @@ class AddAlarmScreen(QWidget):
         self.layout.addLayout(self.header_layout)
 
     def configure_back_button(self):
-        button_font = QFont()
-        button_font.setPointSize(22)
-
-        self.back_button.setFont(button_font)
-        self.back_button.setFixedSize(40,40)
+        self.back_button.setIcon(QIcon(str(ICONS_DIR / 'back.svg')))
+        self.back_button.setIconSize(QSize(28, 28))
+        self.back_button.setFixedSize(40, 40)
         self.back_button.setStyleSheet(
             'QPushButton { border: none; background: transparent; padding: 0px; }'
         )
+
         self.back_button.setToolTip('Back')
+        self.back_button.setAccessibleName('Back')
         self.back_button.clicked.connect(self.back_requested.emit)
 
         self.header_layout.addWidget(self.back_button)
@@ -71,15 +75,15 @@ class AddAlarmScreen(QWidget):
         self.header_layout.addWidget(self.add_alarm_title,1)
 
     def configure_settings_button(self):
-        button_font = QFont()
-        button_font.setPointSize(20)
-
-        self.settings_button.setFont(button_font)
+        self.settings_button.setIcon(QIcon(str(ICONS_DIR / 'settings.svg')))
+        self.settings_button.setIconSize(QSize(26, 26))
         self.settings_button.setFixedSize(40,40)
         self.settings_button.setStyleSheet(
             'QPushButton { border: none; background: transparent; padding: 0px; }'
         )
+
         self.settings_button.setToolTip('Settings')
+        self.settings_button.setAccessibleName('Settings')
         self.settings_button.clicked.connect(self.open_settings_screen.emit)
 
         self.header_layout.addWidget(self.settings_button)

@@ -26,5 +26,12 @@
         "ringtone": "Chime",
         "recurring": true,
         "id": "ea51fddb-cc80-4d0c-91a9-55ad0a0313d8"
+    },
+    {
+        "time": "18:46",
+        "name": "I dont kno",
+        "ringtone": "Default",
+        "recurring": false,
+        "id": "ff6c39aa-193c-439f-b02c-bf81504e5cb1"
     }
 ]
