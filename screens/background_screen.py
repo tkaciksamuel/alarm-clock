@@ -8,9 +8,12 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
     QLabel,
+    QRadioButton,
+    QButtonGroup
 )
 
 ICONS_DIR = Path(__file__).resolve().parent.parent / 'icons'
+BACKGROUNDS_DIR = Path(__file__).resolve().parent.parent / 'backgrounds'
 
 class BackgroundScreen(QWidget):
     back_requested = pyqtSignal()
@@ -29,6 +32,9 @@ class BackgroundScreen(QWidget):
 
         self.screen_title = QLabel('BACKGROUNDS')
         self.configure_screen_title()
+
+        self.background_group = QButtonGroup(self)
+        self.configure_background_choices()
 
         self.layout.addStretch()
 
@@ -56,3 +62,27 @@ class BackgroundScreen(QWidget):
 
         self.header_layout.addWidget(self.screen_title, 1)
         self.header_layout.addSpacing(40)
+
+    def configure_background_choices(self):
+        for filename in ('default.jpg', 'smoking.jpg', 'spiral.jpg'):
+            self.add_background_choice(filename)
+
+        self.set_selected_background('default.jpg')
+
+    def add_background_choice(self, filename):
+        display_name = Path(filename).stem.capitalize()
+        button = QRadioButton(display_name)
+        button.setProperty('background', filename)
+
+        self.background_group.addButton(button)
+        self.layout.insertWidget(len(self.background_group.buttons()), button)
+
+
+    def get_selected_background(self):
+        return self.background_group.checkedButton().property('background')
+
+    def set_selected_background(self, filename):
+        for button in self.background_group.buttons():
+            if button.property('background') == filename:
+                button.setChecked(True)
+                break
