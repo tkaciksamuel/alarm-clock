@@ -1,8 +1,8 @@
 import shutil
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
 )
 
+ICONS_DIR = Path(__file__).resolve().parent.parent / 'icons'
 
 class RingtoneScreen(QWidget):
     back_requested = pyqtSignal()
@@ -30,7 +31,7 @@ class RingtoneScreen(QWidget):
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
 
-        self.back_button = QPushButton('←')
+        self.back_button = QPushButton()
         self.configure_back_button()
 
         self.screen_title = QLabel('RINGTONES')
@@ -45,15 +46,15 @@ class RingtoneScreen(QWidget):
         self.configure_import_sound_button()
 
     def configure_back_button(self):
-        button_font = QFont()
-        button_font.setPointSize(22)
-
-        self.back_button.setFont(button_font)
+        self.back_button.setIcon(QIcon(str(ICONS_DIR / 'back.svg')))
+        self.back_button.setIconSize(QSize(28,28))
         self.back_button.setFixedSize(40, 40)
         self.back_button.setStyleSheet(
             'QPushButton { border: none; background: transparent; padding: 0px; }'
         )
+
         self.back_button.setToolTip('Back')
+        self.back_button.setAccessibleName('Back')
         self.back_button.clicked.connect(self.back_requested.emit)
 
         self.header_layout.addWidget(self.back_button)

@@ -1,5 +1,7 @@
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
+from pathlib import Path
+
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -7,6 +9,8 @@ from PyQt6.QtWidgets import (
     QLabel,
     QPushButton,
 )
+
+ICONS_DIR = Path(__file__).resolve().parent.parent / 'icons'
 
 class RingAlarmScreen(QWidget):
     close_alarm = pyqtSignal()
@@ -30,11 +34,11 @@ class RingAlarmScreen(QWidget):
 
         self.configure_buttons_layout()
 
-        self.postpone_button = QPushButton('✖')
+        self.postpone_button = QPushButton()
         self.configure_postpone_button()
         self.postpone_button.clicked.connect(self.postpone_alarm.emit)
 
-        self.close_button = QPushButton('✓')
+        self.close_button = QPushButton()
         self.configure_close_button()
         self.close_button.clicked.connect(self.close_alarm.emit)
 
@@ -58,14 +62,13 @@ class RingAlarmScreen(QWidget):
         self.layout.addWidget(self.time_label)
 
     def configure_postpone_button(self):
-        button_font = QFont('DejaVu Sans')
-        button_font.setPointSize(32)
-
-        self.postpone_button.setFont(button_font)
+        self.postpone_button.setIcon(QIcon(str(ICONS_DIR / 'postpone.svg')))
+        self.postpone_button.setIconSize(QSize(44, 44))
         self.postpone_button.setFixedSize(80, 80)
         self.postpone_button.setStyleSheet(
-            'border: 2px solid #333333; border-radius: 40px;'
+            'border: 2px solid #333333; border-radius: 40px; padding: 0px;'
         )
+        self.postpone_button.setAccessibleName('Postpone')
 
         self.postpone_column.addWidget(
             self.postpone_button, 0, Qt.AlignmentFlag.AlignHCenter
@@ -77,15 +80,13 @@ class RingAlarmScreen(QWidget):
 
 
     def configure_close_button(self):
-        button_font = QFont()
-        button_font.setPointSize(36)
-        button_font.setWeight(QFont.Weight.DemiBold)
-
-        self.close_button.setFont(button_font)
+        self.close_button.setIcon(QIcon(str(ICONS_DIR / 'close.svg')))
+        self.close_button.setIconSize(QSize(44, 44))
         self.close_button.setFixedSize(80, 80)
         self.close_button.setStyleSheet(
             'border: 2px solid #333333; border-radius: 40px; padding: 0px;'
         )
+        self.close_button.setAccessibleName('Close')
 
         self.close_column.addWidget(
             self.close_button, 0, Qt.AlignmentFlag.AlignHCenter
