@@ -1,10 +1,10 @@
 import sys
-import json
 from pathlib import Path
 from uuid import uuid4
 
-from PyQt6.QtCore import Qt,QTime,QTimer,pyqtSignal,QUrl,QDate,QEvent
+from PyQt6.QtCore import Qt,QTime,QTimer,QUrl
 from PyQt6.QtMultimedia import QSoundEffect
+from PyQt6.QtGui import QPixmap,QPainter
 from PyQt6.QtWidgets import (
     QApplication,
     QLabel,
@@ -25,6 +25,31 @@ from alarm_utils import seconds_until_alarm
 from alarms_store import AlarmsStore
 
 ALARMS_FILE = Path(__file__).parent / 'alarms.json'
+BACKGROUNDS_DIR = Path(__file__).resolve().parent / 'backgrounds'
+
+class WallpaperStack(QStackedWidget):
+    def __init__(self):
+        super().__init__()
+        self.wallpaper = QPixmap()
+        self.currentChanged.connect(self.update)
+
+    def set_wallpaper(self, image_path):
+        self.wallpaper = QPixmap(str(image_path))
+        print(f"Wallpaper path: {image_path}")
+        print(f"File exists: {image_path.is_file()} | Image loaded: {not self.wallpaper.isNull()}")
+        self.update()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+
+        if self.wallpaper.isNull():
+            return
+
+        painter = QPainter(self)
+        painter.drawPixmap(self.rect(), self.wallpaper)
+        painter.end()
+
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -39,12 +64,14 @@ class MainWindow(QMainWindow):
         self.applied_alarm_volume = 50
         self.applied_postpone_minutes = 5
         self.applied_ringtone = 'Default'
+        self.applied_background = 'default.jpg'
 
         self.setWindowTitle('Alarm Clock')
         self.resize(400,700)
 
-        self.screen_stack = QStackedWidget()
+        self.screen_stack = WallpaperStack()
         self.setCentralWidget(self.screen_stack)
+        self.screen_stack.set_wallpaper(BACKGROUNDS_DIR / self.applied_background)
 
         self.setup_main_screen()
 
@@ -172,6 +199,7 @@ class MainWindow(QMainWindow):
         self.postpone_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.statusBar().addWidget(self.postpone_message, 1)
         self.statusBar().setSizeGripEnabled(False)
+        self.statusBar().hide()
 
     def setup_alarm_sound(self):
         self.alarm_sound = QSoundEffect(self)
@@ -251,7 +279,8 @@ class MainWindow(QMainWindow):
         self.postpone_message.setText(
             f"Alarm was postponed {postpone_minutes} minutes"
         )
-        QTimer.singleShot(3000, self.postpone_message.clear)
+        self.statusBar().show()
+        QTimer.singleShot(3000, self.statusBar().hide)
 
     def ring_postponed_alarm(self, alarm):
         self.postponed_alarm_time = None
@@ -372,6 +401,8 @@ class MainWindow(QMainWindow):
         self.change_date_format(date_format)
 
         self.applied_ringtone = self.ringtone_screen.get_selected_ringtone()
+        self.applied_background = self.background_screen.get_selected_background()
+        self.screen_stack.set_wallpaper(BACKGROUNDS_DIR / self.applied_background)
 
         self.open_main_screen()
 
@@ -395,6 +426,7 @@ class MainWindow(QMainWindow):
             )
         )
         self.ringtone_screen.set_selected_ringtone(self.applied_ringtone)
+        self.background_screen.set_selected_background(self.applied_background)
 
     def get_ringtone_path(self, ringtone):
         built_in_sounds = {
